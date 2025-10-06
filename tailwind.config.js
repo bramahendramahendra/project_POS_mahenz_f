@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'sans-serif'],
+      },
       animation: {
         'blob': 'blob 7s infinite',
       },
