@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
+import Sidebar from '@/app/components/Sidebar';
+import Header from '@/app/components/Header';
 import api from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { User } from '@/types/user';

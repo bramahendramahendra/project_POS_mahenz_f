@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+npx create-next-app@latest kasir-frontend
+# Pilih: TypeScript (Yes), Tailwind (Yes), App Router (Yes)
+
+cd kasir-frontend
+
+# Install dependencies
+npm install axios
+npm install js-cookie
+npm install @types/js-cookie --save-dev
+
+npm uninstall tailwindcss @tailwindcss/postcss
+npm install -D tailwindcss@^3.4.1 postcss@^8.4.35 autoprefixer@^10.4.17
+npx tailwindcss init -p
