@@ -29,8 +29,13 @@ export default function LoginPage() {
       setAuthUser(user);
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login gagal. Silakan coba lagi.');
+    } catch (err) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || 'Login gagal. Silakan coba lagi.');
+      } else {
+        setError('Login gagal. Silakan coba lagi.');
+      }
     } finally {
       setLoading(false);
     }

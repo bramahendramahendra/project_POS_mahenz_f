@@ -21,7 +21,7 @@ export default function DashboardPage() {
     }
 
     fetchUsers();
-  }, []);
+  }, [router]);
 
   const fetchUsers = async () => {
     try {

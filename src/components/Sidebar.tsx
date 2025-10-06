@@ -13,30 +13,30 @@ export default function Sidebar() {
   const [expandedMenus, setExpandedMenus] = useState<number[]>([]);
 
   useEffect(() => {
-    fetchMenus();
-  }, []);
+    const fetchMenus = async () => {
+      try {
+        const response = await api.get<Menu[]>('/menu/my-menu');
+        setMenus(response.data);
+        
+        // Auto expand menu yang aktif
+        response.data.forEach(menu => {
+          if (menu.children && menu.children.length > 0) {
+            menu.children.forEach(child => {
+              if (pathname === child.path) {
+                setExpandedMenus(prev => [...prev, menu.id]);
+              }
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching menus:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchMenus = async () => {
-    try {
-      const response = await api.get<Menu[]>('/menu/my-menu');
-      setMenus(response.data);
-      
-      // Auto expand menu yang aktif
-      response.data.forEach(menu => {
-        if (menu.children && menu.children.length > 0) {
-          menu.children.forEach(child => {
-            if (pathname === child.path) {
-              setExpandedMenus(prev => [...prev, menu.id]);
-            }
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching menus:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchMenus();
+  }, [pathname]);
 
   const toggleMenu = (menuId: number) => {
     setExpandedMenus(prev => {
@@ -87,7 +87,7 @@ export default function Sidebar() {
             </svg>
           </button>
           
-          {isExpanded && (
+          {isExpanded && menu.children && (
             <div className="ml-4 mt-1 space-y-1 border-l-2 border-purple-500/30 pl-4">
               {menu.children.map(child => renderMenuItem(child))}
             </div>
