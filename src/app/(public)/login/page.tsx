@@ -2,13 +2,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { setAuthToken, setAuthUser } from '@/lib/auth';
 import { LoginResponse } from '@/types/user';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -25,10 +26,16 @@ export default function LoginPage() {
       const response = await api.post<LoginResponse>('/auth/login', formData);
       const { access_token, user } = response.data;
 
+      // Simpan token dan user ke cookies
       setAuthToken(access_token);
       setAuthUser(user);
 
-      router.push('/dashboard');
+      // ✅ BARU: Redirect ke intended page atau dashboard
+      // Jika user mencoba akses /master/menu sebelum login,
+      // setelah login akan redirect ke /master/menu (bukan /dashboard)
+      const from = searchParams.get('from') || '/dashboard';
+      router.push(from);
+      
     } catch (err) {
       if (err && typeof err === 'object' && 'response' in err) {
         const error = err as { response?: { data?: { message?: string } } };
@@ -62,6 +69,13 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Aplikasi Kasir</h1>
             <p className="text-purple-200">Silakan login untuk melanjutkan</p>
+            
+            {/* ✅ BARU: Info jika ada intended destination */}
+            {searchParams.get('from') && (
+              <p className="text-xs text-purple-300 mt-2">
+                Login untuk mengakses halaman yang Anda tuju
+              </p>
+            )}
           </div>
 
           {/* Error Message */}
@@ -90,6 +104,7 @@ export default function LoginPage() {
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all backdrop-blur-sm"
                   placeholder="Masukkan username"
                   required
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -111,6 +126,7 @@ export default function LoginPage() {
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all backdrop-blur-sm"
                   placeholder="Masukkan password"
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </div>

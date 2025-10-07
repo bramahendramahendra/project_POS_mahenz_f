@@ -1,9 +1,6 @@
-// src/app/(protected)/layout.tsx
+// src/app/(dashboard)/layout.tsx
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { isAuthenticated } from '@/lib/auth';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 
@@ -12,13 +9,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
-    }
-  }, [router]);
+  // ✅ TIDAK PERLU useEffect untuk check authentication
+  // Middleware sudah handle semua proteksi route
+  // Jika user sampai ke sini, sudah pasti authenticated
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
