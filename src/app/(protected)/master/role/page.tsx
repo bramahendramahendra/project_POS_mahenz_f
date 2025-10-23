@@ -10,8 +10,26 @@ interface Role {
   created_at: string;
 }
 
+interface Meta {
+  page: number;
+  perPage: number;
+  totalPages: number;
+  totalRecords: number;
+}
+
+interface RolesResponse {
+  data: Role[];
+  meta: Meta;
+}
+
 export default function MasterRolePage() {
   const [roles, setRoles] = useState<Role[]>([]);
+  const [meta, setMeta] = useState<Meta>({
+    page: 1,
+    perPage: 10,
+    totalPages: 1,
+    totalRecords: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -22,22 +40,58 @@ export default function MasterRolePage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // State untuk pagination dan search
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
     fetchRoles();
-  }, []);
+  }, [currentPage, perPage, searchQuery]);
 
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      const response = await api.get<Role[]>('/roles');
-      setRoles(response.data);
+      const response = await api.get<RolesResponse>('/roles', {
+        params: {
+          page: currentPage,
+          limit: perPage,
+          search: searchQuery,
+        },
+      });
+      setRoles(response.data.data);
+      setMeta(response.data.meta);
     } catch (error) {
       console.error('Error fetching roles:', error);
       setError('Gagal memuat data roles');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchInput);
+    setCurrentPage(1); // Reset ke halaman pertama saat search
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePerPageChange = (newPerPage: number) => {
+    setPerPage(newPerPage);
+    setCurrentPage(1); // Reset ke halaman pertama
   };
 
   const handleOpenModal = (mode: 'create' | 'edit', role?: Role) => {
@@ -97,6 +151,29 @@ export default function MasterRolePage() {
     }
   };
 
+  // Generate array untuk pagination buttons
+  const getPaginationRange = () => {
+    const range = [];
+    const delta = 2; // Jumlah halaman yang ditampilkan di kiri dan kanan halaman aktif
+    
+    for (let i = 1; i <= meta.totalPages; i++) {
+      if (
+        i === 1 || // Halaman pertama
+        i === meta.totalPages || // Halaman terakhir
+        (i >= currentPage - delta && i <= currentPage + delta) // Halaman sekitar current page
+      ) {
+        range.push(i);
+      } else if (
+        i === currentPage - delta - 1 ||
+        i === currentPage + delta + 1
+      ) {
+        range.push('...');
+      }
+    }
+    
+    return range;
+  };
+
   return (
     <div className="p-8">
       {/* Page Header */}
@@ -120,10 +197,12 @@ export default function MasterRolePage() {
 
       {/* Content Card */}
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">Daftar Role</h3>
-            <p className="text-purple-300 text-sm">Kelola role sistem</p>
+            <p className="text-purple-300 text-sm">
+              Total {meta.totalRecords} role terdaftar
+            </p>
           </div>
           
           <button
@@ -139,65 +218,200 @@ export default function MasterRolePage() {
           </button>
         </div>
 
+        {/* Search Bar & Per Page Selector */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          {/* Search Form */}
+          <form onSubmit={handleSearch} className="flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Cari nama role atau deskripsi..."
+                className="w-full pl-12 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </form>
+
+          {/* Per Page Selector */}
+          <div className="flex items-center space-x-3">
+            <span className="text-purple-300 text-sm whitespace-nowrap">Tampilkan:</span>
+            <select
+              value={perPage}
+              onChange={(e) => handlePerPageChange(Number(e.target.value))}
+              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-purple-300 text-sm">data</span>
+          </div>
+        </div>
+
+        {/* Table */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <svg className="animate-spin h-8 w-8 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <div className="flex items-center space-x-3">
+              <svg className="animate-spin h-8 w-8 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-purple-300 font-medium">Loading...</span>
+            </div>
+          </div>
+        ) : roles.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
+            <p className="text-purple-300 font-medium">
+              {searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data role'}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-4 px-4 text-purple-300 font-semibold">ID</th>
-                  <th className="text-left py-4 px-4 text-purple-300 font-semibold">Nama Role</th>
-                  <th className="text-left py-4 px-4 text-purple-300 font-semibold">Deskripsi</th>
-                  <th className="text-left py-4 px-4 text-purple-300 font-semibold">Tanggal Dibuat</th>
-                  <th className="text-left py-4 px-4 text-purple-300 font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map((role) => (
-                  <tr key={role.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4 text-white">{role.id}</td>
-                    <td className="py-4 px-4">
-                      <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-semibold">
-                        {role.nama_role}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-purple-200">{role.deskripsi || '-'}</td>
-                    <td className="py-4 px-4 text-purple-200">
-                      {new Date(role.created_at).toLocaleDateString('id-ID')}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleOpenModal('edit', role)}
-                          className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors group"
-                          title="Edit"
-                        >
-                          <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(role)}
-                          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
-                          title="Hapus"
-                        >
-                          <svg className="w-5 h-5 text-red-400 group-hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">No</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Nama Role</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Deskripsi</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Tanggal Dibuat</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {roles.map((role, index) => (
+                    <tr key={role.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-4 text-white">
+                        {(currentPage - 1) * perPage + index + 1}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-semibold">
+                          {role.nama_role}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-purple-200">
+                        {role.deskripsi || '-'}
+                      </td>
+                      <td className="py-4 px-4 text-purple-200">
+                        {new Date(role.created_at).toLocaleDateString('id-ID', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleOpenModal('edit', role)}
+                            className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors group"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(role)}
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
+                            title="Hapus"
+                          >
+                            <svg className="w-5 h-5 text-red-400 group-hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
+              {/* Info */}
+              <div className="text-purple-300 text-sm">
+                Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
+              </div>
+
+              {/* Pagination Buttons */}
+              <div className="flex items-center space-x-2">
+                {/* Previous Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {getPaginationRange().map((page, index) => (
+                    page === '...' ? (
+                      <span key={`dots-${index}`} className="px-3 py-2 text-purple-300">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page as number)}
+                        className={`px-4 py-2 rounded-lg transition-all ${
+                          currentPage === page
+                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold'
+                            : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  ))}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === meta.totalPages}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
