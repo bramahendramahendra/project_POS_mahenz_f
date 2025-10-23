@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
-import { setAuthToken, setAuthUser } from '@/lib/auth';
+import { setAuthToken, setAuthUser, setAllowedPaths } from '@/lib/auth';
 import { LoginResponse } from '@/types/user';
 
 export default function LoginPage() {
@@ -24,15 +24,14 @@ export default function LoginPage() {
 
     try {
       const response = await api.post<LoginResponse>('/auth/login', formData);
-      const { access_token, user } = response.data;
+      const { access_token, user, allowedPaths } = response.data;
 
-      // Simpan token dan user ke cookies
+      // Simpan token, user, dan allowed paths ke cookies
       setAuthToken(access_token);
       setAuthUser(user);
+      setAllowedPaths(allowedPaths);  // ✅ BARU: Simpan allowed paths
 
-      // ✅ BARU: Redirect ke intended page atau dashboard
-      // Jika user mencoba akses /master/menu sebelum login,
-      // setelah login akan redirect ke /master/menu (bukan /dashboard)
+      // Redirect ke intended page atau dashboard
       const from = searchParams.get('from') || '/dashboard';
       router.push(from);
       
@@ -50,13 +49,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
-      {/* Login Card */}
       <div className="relative w-full max-w-md">
-        {/* 3D Glass Card Effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-3xl blur-xl transform rotate-6 scale-105"></div>
         
         <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 transform transition-all duration-300 hover:scale-105">
-          {/* Logo/Icon */}
           <div className="flex justify-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg transform transition-transform hover:rotate-12">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,12 +61,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Title */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Aplikasi Kasir</h1>
             <p className="text-purple-200">Silakan login untuk melanjutkan</p>
             
-            {/* ✅ BARU: Info jika ada intended destination */}
             {searchParams.get('from') && (
               <p className="text-xs text-purple-300 mt-2">
                 Login untuk mengakses halaman yang Anda tuju
@@ -78,14 +72,12 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm">
               <p className="text-red-200 text-sm text-center">{error}</p>
             </div>
           )}
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
@@ -150,7 +142,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-purple-300 text-sm">
               Demo: username: <span className="font-semibold">admin</span> | password: <span className="font-semibold">admin123</span>
