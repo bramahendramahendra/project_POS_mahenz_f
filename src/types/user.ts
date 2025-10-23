@@ -17,6 +17,6 @@ export interface User {
 
 export interface LoginResponse {
   access_token: string;
-  user: User;  // ✅ Ganti 'any' dengan 'User'
+  user: User;
   allowedPaths: string[];
 }

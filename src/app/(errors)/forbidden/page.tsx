@@ -1,9 +1,10 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth';
 
-export default function ForbiddenPage() {
+function ForbiddenContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = getAuthUser();
@@ -148,5 +149,17 @@ export default function ForbiddenPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ForbiddenPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    }>
+      <ForbiddenContent />
+    </Suspense>
   );
 }

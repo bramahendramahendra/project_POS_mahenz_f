@@ -1,4 +1,3 @@
-// src/lib/auth.ts
 import Cookies from 'js-cookie';
 import { User } from '@/types/user';
 

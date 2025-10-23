@@ -1,4 +1,3 @@
-// src/app/(dashboard)/master/menu/page.tsx
 'use client';
 
 export default function MasterMenuPage() {

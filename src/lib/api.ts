@@ -1,4 +1,3 @@
-// src/lib/api.ts
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { clearAuth } from './auth';

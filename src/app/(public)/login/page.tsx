@@ -1,4 +1,3 @@
-// src/app/(public)/login/page.tsx
 'use client';
 
 import { useState, Suspense } from 'react';
@@ -7,7 +6,6 @@ import api from '@/lib/api';
 import { setAuthToken, setAuthUser, setAllowedPaths } from '@/lib/auth';
 import { LoginResponse } from '@/types/user';
 
-// Komponen terpisah yang menggunakan useSearchParams
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();

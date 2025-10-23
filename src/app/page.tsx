@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -9,9 +8,6 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ Redirect berdasarkan status auth
-    // Note: Middleware juga handle ini, tapi kita tambahkan
-    // untuk avoid flash dan lebih responsive
     if (isAuthenticated()) {
       router.push('/dashboard');
     } else {
