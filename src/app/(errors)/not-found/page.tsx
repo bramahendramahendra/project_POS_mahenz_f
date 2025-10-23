@@ -1,4 +1,3 @@
-// src/app/(errors)/not-found/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';

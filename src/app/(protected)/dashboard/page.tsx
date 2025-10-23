@@ -24,7 +24,7 @@ export default function DashboardPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
     return date.toLocaleDateString('id-ID', { 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => {
     return status === 'aktif' 
       ? 'bg-green-500/20 text-green-300' 
       : 'bg-red-500/20 text-red-300';

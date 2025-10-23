@@ -1,13 +1,14 @@
-// src/app/(auth)/login/page.tsx
+// src/app/(public)/login/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { setAuthToken, setAuthUser, setAllowedPaths } from '@/lib/auth';
 import { LoginResponse } from '@/types/user';
 
-export default function LoginPage() {
+// Komponen terpisah yang menggunakan useSearchParams
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
@@ -150,5 +151,23 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function LoginLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-pulse text-white">Loading...</div>
+    </div>
+  );
+}
+
+// Main page component dengan Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginForm />
+    </Suspense>
   );
 }

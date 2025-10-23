@@ -1,4 +1,3 @@
-// src/app/(errors)/layout.tsx
 'use client';
 
 export default function ErrorsLayout({
