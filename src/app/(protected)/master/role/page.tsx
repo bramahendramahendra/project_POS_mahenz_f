@@ -46,6 +46,7 @@ export default function MasterRolePage() {
   const [perPage, setPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [showPerPageDropdown, setShowPerPageDropdown] = useState(false);
 
   // Debounce untuk auto-search
   useEffect(() => {
@@ -96,6 +97,7 @@ export default function MasterRolePage() {
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
     setCurrentPage(1); // Reset ke halaman pertama
+    setShowPerPageDropdown(false); // Close dropdown
   };
 
   const handleOpenModal = (mode: 'create' | 'edit', role?: Role) => {
@@ -258,28 +260,93 @@ export default function MasterRolePage() {
             )}
           </div>
 
-          {/* Per Page Selector - Fixed Styling */}
-          <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-            <span className="text-purple-300 text-sm whitespace-nowrap">Tampilkan:</span>
-            <select
-              value={perPage}
-              onChange={(e) => handlePerPageChange(Number(e.target.value))}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer appearance-none pr-8"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a78bfa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right center',
-                backgroundSize: '1.5rem',
-              }}
+          {/* Per Page Selector - Custom 3D Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
+              className="flex items-center space-x-3 bg-gradient-to-br from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 border border-white/20 rounded-xl px-5 py-2 shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm"
             >
-              <option value={5} className="bg-slate-900 text-white">5</option>
-              <option value={10} className="bg-slate-900 text-white">10</option>
-              <option value={20} className="bg-slate-900 text-white">20</option>
-              <option value={50} className="bg-slate-900 text-white">50</option>
-            </select>
-            <span className="text-purple-300 text-sm">data</span>
+              <span className="text-purple-300 text-sm whitespace-nowrap">Tampilkan:</span>
+              <span className="text-white font-bold text-lg min-w-[2rem] text-center bg-gradient-to-br from-purple-500/30 to-blue-500/30 px-3 py-1 rounded-lg">
+                {perPage}
+              </span>
+              <span className="text-purple-300 text-sm">data</span>
+              <svg 
+                className={`w-5 h-5 text-purple-400 transition-transform duration-300 ${showPerPageDropdown ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Custom Dropdown Menu */}
+            {showPerPageDropdown && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setShowPerPageDropdown(false)}
+                />
+                
+                {/* Dropdown Options */}
+                <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
+                  <div className="p-2 space-y-1">
+                    {[5, 10, 20, 50].map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => handlePerPageChange(option)}
+                        className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
+                          perPage === option
+                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+                            : 'text-purple-200 hover:bg-white/10 hover:text-white hover:scale-102'
+                        }`}
+                      >
+                        <span className="flex items-center space-x-3">
+                          <span className={`font-semibold text-lg ${
+                            perPage === option ? 'text-white' : 'text-purple-400'
+                          }`}>
+                            {option}
+                          </span>
+                          <span className="text-sm opacity-80">data per halaman</span>
+                        </span>
+                        {perPage === option && (
+                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Decorative gradient line */}
+                  <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
+                </div>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Add animation keyframes */}
+        <style jsx>{`
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-slideDown {
+            animation: slideDown 0.2s ease-out;
+          }
+          .hover\:scale-102:hover {
+            transform: scale(1.02);
+          }
+        `}</style>
 
         {/* Table */}
         {loading ? (
