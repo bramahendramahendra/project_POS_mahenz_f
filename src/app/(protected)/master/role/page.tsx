@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 
 interface Role {
@@ -47,6 +47,16 @@ export default function MasterRolePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
 
+  // Debounce untuk auto-search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setCurrentPage(1); // Reset ke halaman pertama saat search berubah
+    }, 500); // Delay 500ms setelah user berhenti mengetik
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     fetchRoles();
   }, [currentPage, perPage, searchQuery]);
@@ -70,12 +80,6 @@ export default function MasterRolePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(searchInput);
-    setCurrentPage(1); // Reset ke halaman pertama saat search
   };
 
   const handleClearSearch = () => {
@@ -220,8 +224,8 @@ export default function MasterRolePage() {
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="flex-1">
+          {/* Search Input - Auto Search */}
+          <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
@@ -239,7 +243,7 @@ export default function MasterRolePage() {
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -247,20 +251,31 @@ export default function MasterRolePage() {
                 </button>
               )}
             </div>
-          </form>
+            {searchQuery && (
+              <p className="mt-2 text-xs text-purple-300">
+                Hasil pencarian untuk: <span className="font-semibold">"{searchQuery}"</span>
+              </p>
+            )}
+          </div>
 
-          {/* Per Page Selector */}
-          <div className="flex items-center space-x-3">
+          {/* Per Page Selector - Fixed Styling */}
+          <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-purple-300 text-sm whitespace-nowrap">Tampilkan:</span>
             <select
               value={perPage}
               onChange={(e) => handlePerPageChange(Number(e.target.value))}
-              className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer appearance-none pr-8"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a78bfa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right center',
+                backgroundSize: '1.5rem',
+              }}
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
+              <option value={5} className="bg-slate-900 text-white">5</option>
+              <option value={10} className="bg-slate-900 text-white">10</option>
+              <option value={20} className="bg-slate-900 text-white">20</option>
+              <option value={50} className="bg-slate-900 text-white">50</option>
             </select>
             <span className="text-purple-300 text-sm">data</span>
           </div>
