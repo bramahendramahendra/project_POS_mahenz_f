@@ -234,7 +234,7 @@ export default function MasterRolePage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Cari nama role atau deskripsi..."
-                className="w-full pl-12 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,12 +262,12 @@ export default function MasterRolePage() {
 
           {/* Per Page Selector - Custom 3D Dropdown */}
           <div className="relative">
-            <button
+            <div
               onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
-              className="flex items-center space-x-3 bg-gradient-to-br from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 border border-white/20 rounded-xl px-5 py-2 shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm"
+              className="flex items-center space-x-3 bg-gradient-to-br from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 border border-white/20 rounded-xl px-5 py-2 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer backdrop-blur-sm"
             >
-              <span className="text-purple-300 text-sm whitespace-nowrap">Tampilkan:</span>
-              <span className="text-white font-bold text-lg min-w-[2rem] text-center bg-gradient-to-br from-purple-500/30 to-blue-500/30 px-3 py-1 rounded-lg">
+              <span className="text-purple-300 text-sm">Tampilkan:</span>
+              <span className="text-white font-bold text-lg px-3 py-1 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30">
                 {perPage}
               </span>
               <span className="text-purple-300 text-sm">data</span>
@@ -279,7 +279,7 @@ export default function MasterRolePage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
+            </div>
 
             {/* Custom Dropdown Menu */}
             {showPerPageDropdown && (

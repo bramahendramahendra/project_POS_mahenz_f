@@ -1,21 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 
-interface Menu {
+interface Shop {
   id: number;
-  nama_menu: string;
-  icon: string;
-  path: string;
-  urutan: number;
-  parent_id: number | null;
-  is_active: boolean;
+  nama_toko: string;
+  deskripsi: string;
+  nomor_telepon: string;
+  nomor_whatsapp: string;
+  alamat: string;
   created_at: string;
-  parent?: {
-    id: number;
-    nama_menu: string;
-  };
 }
 
 interface Meta {
@@ -25,14 +20,13 @@ interface Meta {
   totalRecords: number;
 }
 
-interface MenusResponse {
-  data: Menu[];
+interface ShopsResponse {
+  data: Shop[];
   meta: Meta;
 }
 
-export default function MasterMenuPage() {
-  const [menus, setMenus] = useState<Menu[]>([]);
-  const [parentMenus, setParentMenus] = useState<Menu[]>([]);
+export default function MasterShopPage() {
+  const [shops, setShops] = useState<Shop[]>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
     perPage: 10,
@@ -42,65 +36,56 @@ export default function MasterMenuPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [formData, setFormData] = useState({
-    nama_menu: '',
-    icon: '',
-    path: '',
-    urutan: 0,
-    parent_id: null as number | null,
-    is_active: true,
+    nama_toko: '',
+    deskripsi: '',
+    nomor_telepon: '',
+    nomor_whatsapp: '',
+    alamat: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // State untuk pagination dan search
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showPerPageDropdown, setShowPerPageDropdown] = useState(false);
 
+  // Debounce untuk auto-search
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
-      setCurrentPage(1);
-    }, 500);
+      setCurrentPage(1); // Reset ke halaman pertama saat search berubah
+    }, 500); // Delay 500ms setelah user berhenti mengetik
 
     return () => clearTimeout(timer);
   }, [searchInput]);
 
   useEffect(() => {
-    fetchMenus();
-    fetchParentMenus();
+    fetchShops();
   }, [currentPage, perPage, searchQuery]);
 
-  const fetchMenus = async () => {
+  const fetchShops = async () => {
     try {
       setLoading(true);
-      const response = await api.get<MenusResponse>('/menu', {
+      const response = await api.get<ShopsResponse>('/shops', {
         params: {
           page: currentPage,
           limit: perPage,
           search: searchQuery,
         },
       });
-      setMenus(response.data.data);
+      setShops(response.data.data);
       setMeta(response.data.meta);
     } catch (error) {
-      console.error('Error fetching menus:', error);
-      setError('Gagal memuat data menu');
+      console.error('Error fetching shops:', error);
+      setError('Gagal memuat data shops');
       setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchParentMenus = async () => {
-    try {
-      const response = await api.get<Menu[]>('/menu/tree');
-      setParentMenus(response.data);
-    } catch (error) {
-      console.error('Error fetching parent menus:', error);
     }
   };
 
@@ -117,20 +102,19 @@ export default function MasterMenuPage() {
 
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
-    setCurrentPage(1);
-    setShowPerPageDropdown(false);
+    setCurrentPage(1); // Reset ke halaman pertama
+    setShowPerPageDropdown(false); // Close dropdown
   };
 
-  const handleOpenModal = (mode: 'create' | 'edit', menu?: Menu) => {
+  const handleOpenModal = (mode: 'create' | 'edit', shop?: Shop) => {
     setModalMode(mode);
-    setSelectedMenu(menu || null);
+    setSelectedShop(shop || null);
     setFormData({
-      nama_menu: menu?.nama_menu || '',
-      icon: menu?.icon || '',
-      path: menu?.path || '',
-      urutan: menu?.urutan || 0,
-      parent_id: menu?.parent_id || null,
-      is_active: menu?.is_active !== undefined ? menu.is_active : true,
+      nama_toko: shop?.nama_toko || '',
+      deskripsi: shop?.deskripsi || '',
+      nomor_telepon: shop?.nomor_telepon || '',
+      nomor_whatsapp: shop?.nomor_whatsapp || '',
+      alamat: shop?.alamat || '',
     });
     setShowModal(true);
     setError('');
@@ -138,14 +122,13 @@ export default function MasterMenuPage() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setSelectedMenu(null);
+    setSelectedShop(null);
     setFormData({ 
-      nama_menu: '', 
-      icon: '', 
-      path: '', 
-      urutan: 0, 
-      parent_id: null,
-      is_active: true 
+      nama_toko: '', 
+      deskripsi: '', 
+      nomor_telepon: '', 
+      nomor_whatsapp: '', 
+      alamat: '', 
     });
     setError('');
   };
@@ -157,16 +140,15 @@ export default function MasterMenuPage() {
 
     try {
       if (modalMode === 'create') {
-        await api.post('/menu', formData);
-        setSuccess('Menu berhasil ditambahkan');
-      } else if (selectedMenu) {
-        await api.patch(`/menu/${selectedMenu.id}`, formData);
-        setSuccess('Menu berhasil diupdate');
+        await api.post('/shops', formData);
+        setSuccess('Toko berhasil ditambahkan');
+      } else if (selectedShop) {
+        await api.patch(`/shops/${selectedShop.id}`, formData);
+        setSuccess('Toko berhasil diupdate');
       }
       
       handleCloseModal();
-      fetchMenus();
-      fetchParentMenus();
+      fetchShops();
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -174,32 +156,32 @@ export default function MasterMenuPage() {
     }
   };
 
-  const handleDelete = async (menu: Menu) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus menu "${menu.nama_menu}"?`)) {
+  const handleDelete = async (shop: Shop) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus toko "${shop.nama_toko}"?`)) {
       return;
     }
 
     try {
-      await api.delete(`/menu/${menu.id}`);
-      setSuccess('Menu berhasil dihapus');
-      fetchMenus();
-      fetchParentMenus();
+      await api.delete(`/shops/${shop.id}`);
+      setSuccess('Shop berhasil dihapus');
+      fetchShops();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal menghapus menu');
+      setError(err.response?.data?.message || 'Gagal menghapus shop');
       setTimeout(() => setError(''), 3000);
     }
   };
 
+  // Generate array untuk pagination buttons
   const getPaginationRange = () => {
     const range = [];
-    const delta = 2;
+    const delta = 2; // Jumlah halaman yang ditampilkan di kiri dan kanan halaman aktif
     
     for (let i = 1; i <= meta.totalPages; i++) {
       if (
-        i === 1 ||
-        i === meta.totalPages ||
-        (i >= currentPage - delta && i <= currentPage + delta)
+        i === 1 || // Halaman pertama
+        i === meta.totalPages || // Halaman terakhir
+        (i >= currentPage - delta && i <= currentPage + delta) // Halaman sekitar current page
       ) {
         range.push(i);
       } else if (
@@ -217,8 +199,8 @@ export default function MasterMenuPage() {
     <div className="p-8">
       {/* Page Header */}
       <div className="mb-8 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
-        <h2 className="text-3xl font-bold text-white mb-2">Master Menu 📋</h2>
-        <p className="text-purple-200">Kelola menu dan navigasi aplikasi</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Master Toko 🏪</h2>
+        <p className="text-purple-200">Kelola toko dan permission pengguna</p>
       </div>
 
       {/* Success/Error Messages */}
@@ -238,9 +220,9 @@ export default function MasterMenuPage() {
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-white mb-1">Daftar Menu</h3>
+            <h3 className="text-2xl font-bold text-white mb-1">Daftar Toko</h3>
             <p className="text-purple-300 text-sm">
-              Total {meta.totalRecords} menu terdaftar
+              Total {meta.totalRecords} toko terdaftar
             </p>
           </div>
           
@@ -252,20 +234,21 @@ export default function MasterMenuPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>Tambah Menu</span>
+              <span>Tambah Shop</span>
             </span>
           </button>
         </div>
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          {/* Search Input - Auto Search */}
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nama menu atau path..."
+                placeholder="Cari nama shop atau deskripsi..."
                 className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -285,9 +268,14 @@ export default function MasterMenuPage() {
                 </button>
               )}
             </div>
+            {searchQuery && (
+              <p className="mt-2 text-xs text-purple-300">
+                Hasil pencarian untuk: <span className="font-semibold">"{searchQuery}"</span>
+              </p>
+            )}
           </div>
 
-          {/* Per Page Selector */}
+          {/* Per Page Selector - Custom 3D Dropdown */}
           <div className="relative">
             <div
               onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
@@ -308,13 +296,16 @@ export default function MasterMenuPage() {
               </svg>
             </div>
 
+            {/* Custom Dropdown Menu */}
             {showPerPageDropdown && (
               <>
+                {/* Backdrop */}
                 <div 
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowPerPageDropdown(false)}
                 />
                 
+                {/* Dropdown Options */}
                 <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
                   <div className="p-2 space-y-1">
                     {[5, 10, 20, 50].map((option) => (
@@ -343,12 +334,34 @@ export default function MasterMenuPage() {
                       </button>
                     ))}
                   </div>
+                  
+                  {/* Decorative gradient line */}
                   <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
                 </div>
               </>
             )}
           </div>
         </div>
+
+        {/* Add animation keyframes */}
+        <style jsx>{`
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-slideDown {
+            animation: slideDown 0.2s ease-out;
+          }
+          .hover\:scale-102:hover {
+            transform: scale(1.02);
+          }
+        `}</style>
 
         {/* Table */}
         {loading ? (
@@ -361,14 +374,22 @@ export default function MasterMenuPage() {
               <span className="text-purple-300 font-medium">Loading...</span>
             </div>
           </div>
-        ) : menus.length === 0 ? (
+        ) : shops.length === 0 ? (
           <div className="text-center py-12">
             <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
             <p className="text-purple-300 font-medium">
-              {searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data menu'}
+              {searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data shop'}
             </p>
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -377,60 +398,37 @@ export default function MasterMenuPage() {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left py-4 px-4 text-purple-300 font-semibold">No</th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Nama Menu</th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Path</th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Parent</th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Urutan</th>
-                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Status</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Nama Toko</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Deskripsi</th>
+                    <th className="text-left py-4 px-4 text-purple-300 font-semibold">Tanggal Dibuat</th>
                     <th className="text-left py-4 px-4 text-purple-300 font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {menus.map((menu, index) => (
-                    <tr key={menu.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  {shops.map((shop, index) => (
+                    <tr key={shop.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-4 px-4 text-white">
                         {(currentPage - 1) * perPage + index + 1}
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-center space-x-2">
-                          {menu.icon && (
-                            <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menu.icon} />
-                            </svg>
-                          )}
-                          <span className="text-white font-medium">{menu.nama_menu}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-purple-200">
-                        {menu.path || '-'}
-                      </td>
-                      <td className="py-4 px-4 text-purple-200">
-                        {menu.parent ? (
-                          <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
-                            {menu.parent.nama_menu}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
-                            Main Menu
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-purple-200">
-                        {menu.urutan}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          menu.is_active
-                            ? 'bg-green-500/20 text-green-300'
-                            : 'bg-red-500/20 text-red-300'
-                        }`}>
-                          {menu.is_active ? 'Aktif' : 'Nonaktif'}
+                        <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-semibold">
+                          {shop.nama_toko}
                         </span>
+                      </td>
+                      <td className="py-4 px-4 text-purple-200">
+                        {shop.deskripsi || '-'}
+                      </td>
+                      <td className="py-4 px-4 text-purple-200">
+                        {new Date(shop.created_at).toLocaleDateString('id-ID', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleOpenModal('edit', menu)}
+                            onClick={() => handleOpenModal('edit', shop)}
                             className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors group"
                             title="Edit"
                           >
@@ -439,7 +437,7 @@ export default function MasterMenuPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDelete(menu)}
+                            onClick={() => handleDelete(shop)}
                             className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
                             title="Hapus"
                           >
@@ -457,11 +455,14 @@ export default function MasterMenuPage() {
 
             {/* Pagination */}
             <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
+              {/* Info */}
               <div className="text-purple-300 text-sm">
                 Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
               </div>
 
+              {/* Pagination Buttons */}
               <div className="flex items-center space-x-2">
+                {/* Previous Button */}
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
@@ -472,6 +473,7 @@ export default function MasterMenuPage() {
                   </svg>
                 </button>
 
+                {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
                   {getPaginationRange().map((page, index) => (
                     page === '...' ? (
@@ -494,6 +496,7 @@ export default function MasterMenuPage() {
                   ))}
                 </div>
 
+                {/* Next Button */}
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === meta.totalPages}
@@ -512,9 +515,9 @@ export default function MasterMenuPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-white/10 p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 rounded-2xl border border-white/10 p-8 max-w-md w-full shadow-2xl">
             <h3 className="text-2xl font-bold text-white mb-6">
-              {modalMode === 'create' ? 'Tambah Menu Baru' : 'Edit Menu'}
+              {modalMode === 'create' ? 'Tambah Shop Baru' : 'Edit Shop'}
             </h3>
 
             {error && (
@@ -524,99 +527,77 @@ export default function MasterMenuPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Nama Menu *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nama_menu}
-                    onChange={(e) => setFormData({ ...formData, nama_menu: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="Dashboard, Master, dll"
-                    required
-                    maxLength={100}
-                  />
-                </div>
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Nama Shop *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nama_toko}
+                  onChange={(e) => setFormData({ ...formData, nama_toko: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Nama toko..."
+                  required
+                  maxLength={50}
+                />
+              </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Icon SVG Path
-                  </label>
-                  <textarea
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="M3 12l2-2m0 0l7-7..."
-                    rows={2}
-                    maxLength={100}
-                  />
-                  <p className="text-xs text-purple-400 mt-1">SVG path untuk icon menu (opsional)</p>
-                </div>
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Deskripsi
+                </label>
+                <textarea
+                  value={formData.deskripsi}
+                  onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Deskripsi toko..."
+                  rows={3}
+                  maxLength={200}
+                />
+              </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Path/Route
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.path}
-                    onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="/dashboard, /master/menu, dll"
-                    maxLength={200}
-                  />
-                  <p className="text-xs text-purple-400 mt-1">Kosongkan jika menu parent tanpa route</p>
-                </div>
+               <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Nomor telepon *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nomor_telepon}
+                  onChange={(e) => setFormData({ ...formData, nomor_telepon: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Nomor telepon..."
+                  required
+                  maxLength={20}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Parent Menu
-                  </label>
-                  <select
-                    value={formData.parent_id || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      parent_id: e.target.value ? Number(e.target.value) : null 
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">-- Tidak Ada Parent (Main Menu) --</option>
-                    {parentMenus.map((menu) => (
-                      <option key={menu.id} value={menu.id}>
-                        {menu.nama_menu}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+               <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Nomor WhatsApp *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nomor_whatsapp}
+                  onChange={(e) => setFormData({ ...formData, nomor_whatsapp: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Nomor WhatsApp..."
+                  required
+                  maxLength={20}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Urutan *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.urutan}
-                    onChange={(e) => setFormData({ ...formData, urutan: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="0"
-                    required
-                    min={0}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="w-5 h-5 rounded border-white/10 bg-white/5 text-purple-600 focus:ring-2 focus:ring-purple-500"
-                    />
-                    <span className="text-purple-200 font-medium">Menu Aktif</span>
-                  </label>
-                </div>
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Alamat
+                </label>
+                <textarea
+                  value={formData.alamat}
+                  onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Alamat toko..."
+                  rows={3}
+                  maxLength={200}
+                />
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -638,22 +619,6 @@ export default function MasterMenuPage() {
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slideDown {
-          animation: slideDown 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }
