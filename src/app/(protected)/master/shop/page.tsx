@@ -495,10 +495,10 @@ export default function MasterShopPage() {
       {/* Modal dengan Scroll */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          {/* Modal Container dengan max height */}
+          {/* Modal Container */}
           <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">
             
-            {/* Modal Header - Fixed di atas */}
+            {/* Modal Header */}
             <div className="sticky top-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-b border-white/10 px-8 py-6 rounded-t-2xl backdrop-blur-xl z-10">
               <div className="flex items-center justify-between">
                 <div>

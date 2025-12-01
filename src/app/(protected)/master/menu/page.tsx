@@ -509,137 +509,278 @@ export default function MasterMenuPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal dengan Scroll */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-white/10 p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-white mb-6">
-              {modalMode === 'create' ? 'Tambah Menu Baru' : 'Edit Menu'}
-            </h3>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Nama Menu *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nama_menu}
-                    onChange={(e) => setFormData({ ...formData, nama_menu: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="Dashboard, Master, dll"
-                    required
-                    maxLength={100}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Icon SVG Path
-                  </label>
-                  <textarea
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="M3 12l2-2m0 0l7-7..."
-                    rows={2}
-                    maxLength={100}
-                  />
-                  <p className="text-xs text-purple-400 mt-1">SVG path untuk icon menu (opsional)</p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Path/Route
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.path}
-                    onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="/dashboard, /master/menu, dll"
-                    maxLength={200}
-                  />
-                  <p className="text-xs text-purple-400 mt-1">Kosongkan jika menu parent tanpa route</p>
-                </div>
-
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          {/* Modal Container */}
+          <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-b border-white/10 px-8 py-6 rounded-t-2xl backdrop-blur-xl z-10">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Parent Menu
-                  </label>
-                  <select
-                    value={formData.parent_id || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      parent_id: e.target.value ? Number(e.target.value) : null 
-                    })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">-- Tidak Ada Parent (Main Menu) --</option>
-                    {parentMenus.map((menu) => (
-                      <option key={menu.id} value={menu.id}>
-                        {menu.nama_menu}
-                      </option>
-                    ))}
-                  </select>
+                  <h3 className="text-2xl font-bold text-white">
+                    {modalMode === 'create' ? 'Tambah Menu Baru' : 'Edit Menu'}
+                  </h3>
+                  <p className="text-purple-300 text-sm mt-1">
+                    {modalMode === 'create' 
+                      ? 'Isi formulir di bawah untuk menambah menu baru' 
+                      : 'Perbarui informasi menu Anda'}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-purple-200 text-sm font-medium mb-2">
-                    Urutan *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.urutan}
-                    onChange={(e) => setFormData({ ...formData, urutan: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="0"
-                    required
-                    min={0}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="w-5 h-5 rounded border-white/10 bg-white/5 text-purple-600 focus:ring-2 focus:ring-purple-500"
-                    />
-                    <span className="text-purple-200 font-medium">Menu Aktif</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                  title="Tutup"
                 >
-                  Batal
+                  <svg className="w-6 h-6 text-purple-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body - Scrollable */}
+            <div className="overflow-y-auto flex-1 px-8 py-6 custom-scrollbar">
+              {error && (
+                <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg animate-shake">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-red-200 text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6" id="menu-form">
+                {/* Nama Menu */}
+                <div className="space-y-2">
+                  <label className="block text-purple-200 text-sm font-semibold mb-2">
+                    Nama Menu <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.nama_menu}
+                      onChange={(e) => setFormData({ ...formData, nama_menu: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      placeholder="Dashboard, Master, dll"
+                      required
+                      maxLength={100}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-400/70 ml-1">
+                    Maksimal 100 karakter ({formData.nama_menu.length}/100)
+                  </p>
+                </div>
+
+                {/* Icon SVG Path */}
+                <div className="space-y-2">
+                  <label className="block text-purple-200 text-sm font-semibold mb-2">
+                    Icon SVG Path
+                  </label>
+                  <div className="relative">
+                    <div className="absolute top-4 left-4 pointer-events-none">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                    </div>
+                    <textarea
+                      value={formData.icon}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                      placeholder="M3 12l2-2m0 0l7-7..."
+                      rows={2}
+                      maxLength={100}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-400/70 ml-1">SVG path untuk icon menu (opsional)</p>
+                </div>
+
+                {/* Path/Route */}
+                <div className="space-y-2">
+                  <label className="block text-purple-200 text-sm font-semibold mb-2">
+                    Path/Route
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.path}
+                      onChange={(e) => setFormData({ ...formData, path: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      placeholder="/dashboard, /master/menu, dll"
+                      maxLength={200}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-400/70 ml-1">Kosongkan jika menu parent tanpa route</p>
+                </div>
+
+                {/* Parent Menu & Urutan - Grid 2 kolom */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Parent Menu */}
+                  <div className="space-y-2">
+                    <label className="block text-purple-200 text-sm font-semibold mb-2">
+                      Parent Menu
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                      </div>
+                      <select
+                        value={formData.parent_id || ''}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          parent_id: e.target.value ? Number(e.target.value) : null 
+                        })}
+                        className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="">-- Tidak Ada Parent (Main Menu) --</option>
+                        {parentMenus.map((menu) => (
+                          <option key={menu.id} value={menu.id}>
+                            {menu.nama_menu}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Urutan */}
+                  <div className="space-y-2">
+                    <label className="block text-purple-200 text-sm font-semibold mb-2">
+                      Urutan <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                        </svg>
+                      </div>
+                      <input
+                        type="number"
+                        value={formData.urutan}
+                        onChange={(e) => setFormData({ ...formData, urutan: Number(e.target.value) })}
+                        className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="0"
+                        required
+                        min={0}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Aktif - Checkbox */}
+                <div className="space-y-2">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={formData.is_active}
+                          onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                          className="w-6 h-6 rounded-lg border-2 border-white/20 bg-white/5 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer transition-all"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-purple-200 font-semibold group-hover:text-white transition-colors">
+                          Menu Aktif
+                        </span>
+                        <p className="text-xs text-purple-400/70 mt-0.5">
+                          Centang untuk mengaktifkan menu ini di sidebar
+                        </p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        formData.is_active 
+                          ? 'bg-green-500/20 text-green-300' 
+                          : 'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {formData.is_active ? 'Aktif' : 'Nonaktif'}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer - Fixed */}
+            <div className="sticky bottom-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-t border-white/10 px-8 py-6 rounded-b-2xl backdrop-blur-xl">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Batal</span>
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg transition-all"
+                  form="menu-form"
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2"
                 >
-                  {modalMode === 'create' ? 'Tambah' : 'Update'}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{modalMode === 'create' ? 'Tambah Menu' : 'Update Menu'}</span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      <style jsx>{`
+      {/* Global Styles */}
+      <style jsx global>{`
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #9333ea, #3b82f6);
+          border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #a855f7, #60a5fa);
+        }
+
+        /* Animations */
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -650,8 +791,13 @@ export default function MasterMenuPage() {
             transform: translateY(0);
           }
         }
+        
         .animate-slideDown {
           animation: slideDown 0.2s ease-out;
+        }
+        
+        .hover\:scale-102:hover {
+          transform: scale(1.02);
         }
       `}</style>
     </div>
