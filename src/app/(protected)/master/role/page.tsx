@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { FormInput, FormTextarea } from '@/components/FormInput';
 
 interface Role {
   id: number;
@@ -22,6 +23,11 @@ interface RolesResponse {
   meta: Meta;
 }
 
+interface ValidationErrors {
+  nama_role: string;
+  deskripsi: string;
+}
+
 export default function MasterRolePage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [meta, setMeta] = useState<Meta>({
@@ -40,6 +46,10 @@ export default function MasterRolePage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    nama_role: '',
+    deskripsi: '',
+  });
   
   // State untuk pagination dan search
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,8 +62,8 @@ export default function MasterRolePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
-      setCurrentPage(1); // Reset ke halaman pertama saat search berubah
-    }, 500); // Delay 500ms setelah user berhenti mengetik
+      setCurrentPage(1);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchInput]);
@@ -83,6 +93,32 @@ export default function MasterRolePage() {
     }
   };
 
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {
+      nama_role: '',
+      deskripsi: '',
+    };
+    let isValid = true;
+
+    // Validasi nama role
+    if (!formData.nama_role.trim()) {
+      errors.nama_role = 'Nama role tidak boleh kosong';
+      isValid = false;
+    } else if (formData.nama_role.length > 50) {
+      errors.nama_role = 'Nama role maksimal 50 karakter';
+      isValid = false;
+    }
+
+    // Validasi deskripsi (opsional, tapi jika diisi harus valid)
+    if (formData.deskripsi && formData.deskripsi.length > 200) {
+      errors.deskripsi = 'Deskripsi maksimal 200 karakter';
+      isValid = false;
+    }
+
+    setValidationErrors(errors);
+    return isValid;
+  };
+
   const handleClearSearch = () => {
     setSearchInput('');
     setSearchQuery('');
@@ -96,8 +132,8 @@ export default function MasterRolePage() {
 
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
-    setCurrentPage(1); // Reset ke halaman pertama
-    setShowPerPageDropdown(false); // Close dropdown
+    setCurrentPage(1);
+    setShowPerPageDropdown(false);
   };
 
   const handleOpenModal = (mode: 'create' | 'edit', role?: Role) => {
@@ -109,6 +145,10 @@ export default function MasterRolePage() {
     });
     setShowModal(true);
     setError('');
+    setValidationErrors({
+      nama_role: '',
+      deskripsi: '',
+    });
   };
 
   const handleCloseModal = () => {
@@ -116,12 +156,22 @@ export default function MasterRolePage() {
     setSelectedRole(null);
     setFormData({ nama_role: '', deskripsi: '' });
     setError('');
+    setValidationErrors({
+      nama_role: '',
+      deskripsi: '',
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validasi form
+    if (!validateForm()) {
+      setError('Mohon perbaiki kesalahan pada form');
+      return;
+    }
 
     try {
       if (modalMode === 'create') {
@@ -137,7 +187,13 @@ export default function MasterRolePage() {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Terjadi kesalahan');
+      const errorMessage = err.response?.data?.message || 'Terjadi kesalahan';
+      setError(errorMessage);
+      
+      // Handle validation errors dari backend
+      if (err.response?.data?.errors) {
+        setValidationErrors(err.response.data.errors);
+      }
     }
   };
 
@@ -157,16 +213,15 @@ export default function MasterRolePage() {
     }
   };
 
-  // Generate array untuk pagination buttons
   const getPaginationRange = () => {
     const range = [];
-    const delta = 2; // Jumlah halaman yang ditampilkan di kiri dan kanan halaman aktif
+    const delta = 2;
     
     for (let i = 1; i <= meta.totalPages; i++) {
       if (
-        i === 1 || // Halaman pertama
-        i === meta.totalPages || // Halaman terakhir
-        (i >= currentPage - delta && i <= currentPage + delta) // Halaman sekitar current page
+        i === 1 ||
+        i === meta.totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
       ) {
         range.push(i);
       } else if (
@@ -190,14 +245,24 @@ export default function MasterRolePage() {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm">
-          <p className="text-green-200 text-sm">{success}</p>
+        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
+          <div className="flex items-center space-x-3">
+            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-green-200 text-sm">{success}</p>
+          </div>
         </div>
       )}
       
       {error && !showModal && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm">
-          <p className="text-red-200 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
+          <div className="flex items-center space-x-3">
+            <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-red-200 text-sm">{error}</p>
+          </div>
         </div>
       )}
 
@@ -226,7 +291,6 @@ export default function MasterRolePage() {
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          {/* Search Input - Auto Search */}
           <div className="flex-1">
             <div className="relative">
               <input
@@ -260,7 +324,6 @@ export default function MasterRolePage() {
             )}
           </div>
 
-          {/* Per Page Selector - Custom 3D Dropdown */}
           <div className="relative">
             <div
               onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
@@ -281,16 +344,13 @@ export default function MasterRolePage() {
               </svg>
             </div>
 
-            {/* Custom Dropdown Menu */}
             {showPerPageDropdown && (
               <>
-                {/* Backdrop */}
                 <div 
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowPerPageDropdown(false)}
                 />
                 
-                {/* Dropdown Options */}
                 <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
                   <div className="p-2 space-y-1">
                     {[5, 10, 20, 50].map((option) => (
@@ -320,7 +380,6 @@ export default function MasterRolePage() {
                     ))}
                   </div>
                   
-                  {/* Decorative gradient line */}
                   <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
                 </div>
               </>
@@ -420,14 +479,11 @@ export default function MasterRolePage() {
 
             {/* Pagination */}
             <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
-              {/* Info */}
               <div className="text-purple-300 text-sm">
                 Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
               </div>
 
-              {/* Pagination Buttons */}
               <div className="flex items-center space-x-2">
-                {/* Previous Button */}
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
@@ -438,7 +494,6 @@ export default function MasterRolePage() {
                   </svg>
                 </button>
 
-                {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
                   {getPaginationRange().map((page, index) => (
                     page === '...' ? (
@@ -461,7 +516,6 @@ export default function MasterRolePage() {
                   ))}
                 </div>
 
-                {/* Next Button */}
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === meta.totalPages}
@@ -477,10 +531,9 @@ export default function MasterRolePage() {
         )}
       </div>
 
-      {/* Modal dengan Scroll */}
+      {/* Modal dengan Scroll dan Validasi */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          {/* Modal Container */}
           <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">  
             
             {/* Modal Header */}
@@ -506,7 +559,7 @@ export default function MasterRolePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-               </div>
+              </div>
             </div>
             
             {/* Modal Body - Scrollable */}
@@ -523,51 +576,42 @@ export default function MasterRolePage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6" id="role-form">
-                {/* Nama Role */}
-                <div className="space-y-2">
-                  <label className="block text-purple-200 text-sm font-semibold mb-2">
-                    Nama Role <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.nama_role}
-                      onChange={(e) => setFormData({ ...formData, nama_role: e.target.value })}
-                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      placeholder="Contoh: Manager, Supervisor, dll"
-                      required
-                      maxLength={50}
-                    />
-                  </div>
-                  <p className="text-xs text-purple-400/70 ml-1">
-                    Maksimal 50 karakter ({formData.nama_role.length}/50)
-                  </p>
-                </div>
+                {/* Nama Role dengan FormInput */}
+                <FormInput
+                  label="Nama Role"
+                  value={formData.nama_role}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nama_role: e.target.value });
+                    if (validationErrors.nama_role) {
+                      setValidationErrors({ ...validationErrors, nama_role: '' });
+                    }
+                  }}
+                  placeholder="Contoh: Manager, Supervisor, dll"
+                  required
+                  maxLength={50}
+                  error={validationErrors.nama_role}
+                  icon={
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  }
+                />
 
-                {/* Deskripsi */}
-                <div className="space-y-2">
-                  <label className="block text-purple-200 text-sm font-semibold mb-2">
-                    Deskripsi Role
-                  </label>
-                  <div className="relative">
-                    <textarea
-                      value={formData.deskripsi}
-                      onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
-                      className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                      placeholder="Deskripsi role Anda..."
-                      rows={4}
-                      maxLength={200}
-                    />
-                  </div>
-                  <p className="text-xs text-purple-400/70 ml-1">
-                    Maksimal 200 karakter ({formData.deskripsi.length}/200)
-                  </p>
-                </div>
+                {/* Deskripsi dengan FormTextarea */}
+                <FormTextarea
+                  label="Deskripsi Role"
+                  value={formData.deskripsi}
+                  onChange={(e) => {
+                    setFormData({ ...formData, deskripsi: e.target.value });
+                    if (validationErrors.deskripsi) {
+                      setValidationErrors({ ...validationErrors, deskripsi: '' });
+                    }
+                  }}
+                  placeholder="Jelaskan peran dan tanggung jawab role ini..."
+                  rows={4}
+                  maxLength={200}
+                  error={validationErrors.deskripsi}
+                />
               </form>
             </div>
 
@@ -592,7 +636,7 @@ export default function MasterRolePage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {modalMode === 'create' ? 'Tambah Role' : 'Update Role'}
+                  <span>{modalMode === 'create' ? 'Tambah Role' : 'Update Role'}</span>
                 </button>
               </div>
             </div>
@@ -600,9 +644,8 @@ export default function MasterRolePage() {
         </div>
       )}
       
-      {/* Add animation keyframes */}
+      {/* Styles */}
       <style jsx>{`
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
@@ -621,7 +664,6 @@ export default function MasterRolePage() {
           background: linear-gradient(to bottom, #a855f7, #60a5fa);
         }
 
-        /* Animations */
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
@@ -642,10 +684,27 @@ export default function MasterRolePage() {
             transform: translateY(0);
           }
         }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
         .animate-slideDown {
           animation: slideDown 0.2s ease-out;
         }
-        .hover\:scale-102:hover {
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+        
+        .hover\\:scale-102:hover {
           transform: scale(1.02);
         }
       `}</style>
