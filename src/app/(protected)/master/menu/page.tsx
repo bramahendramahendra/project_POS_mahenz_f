@@ -773,18 +773,40 @@ export default function MasterMenuPage() {
           background: linear-gradient(to bottom, #a855f7, #60a5fa);
         }
 
-        /* Select Dropdown Options - Fix white background */
+        /* Select Dropdown Options - Fix all backgrounds */
+        select {
+          background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+
         select option {
           background-color: #1e293b !important;
           color: white !important;
           padding: 8px 12px !important;
         }
         
-        select option:hover,
-        select option:focus,
+        /* Fix untuk selected option */
         select option:checked {
+          background: linear-gradient(90deg, #7c3aed 0%, #2563eb 100%) !important;
+          color: white !important;
+          font-weight: 600 !important;
+        }
+
+        /* Fix untuk hover state */
+        select option:hover {
           background-color: #334155 !important;
-          background: linear-gradient(to right, #7c3aed, #2563eb) !important;
+          color: white !important;
+        }
+
+        /* Fix untuk focus state */
+        select option:focus {
+          background-color: #475569 !important;
+          color: white !important;
+        }
+
+        /* Alternative styling untuk browser yang tidak support */
+        select:focus option:checked {
+          background: #7c3aed !important;
+          color: white !important;
         }
 
         /* Animations */
