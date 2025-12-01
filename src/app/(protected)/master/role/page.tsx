@@ -328,26 +328,6 @@ export default function MasterRolePage() {
           </div>
         </div>
 
-        {/* Add animation keyframes */}
-        <style jsx>{`
-          @keyframes slideDown {
-            from {
-              opacity: 0;
-              transform: translateY(-10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          .animate-slideDown {
-            animation: slideDown 0.2s ease-out;
-          }
-          .hover\:scale-102:hover {
-            transform: scale(1.02);
-          }
-        `}</style>
-
         {/* Table */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -497,69 +477,178 @@ export default function MasterRolePage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal dengan Scroll */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-white/10 p-8 max-w-md w-full shadow-2xl">
-            <h3 className="text-2xl font-bold text-white mb-6">
-              {modalMode === 'create' ? 'Tambah Role Baru' : 'Edit Role'}
-            </h3>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <p className="text-red-200 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-purple-200 text-sm font-medium mb-2">
-                  Nama Role *
-                </label>
-                <input
-                  type="text"
-                  value={formData.nama_role}
-                  onChange={(e) => setFormData({ ...formData, nama_role: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Manager, Supervisor, dll"
-                  required
-                  maxLength={50}
-                />
-              </div>
-
-              <div>
-                <label className="block text-purple-200 text-sm font-medium mb-2">
-                  Deskripsi
-                </label>
-                <textarea
-                  value={formData.deskripsi}
-                  onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Deskripsi role..."
-                  rows={3}
-                  maxLength={200}
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          {/* Modal Container dengan max height */}
+          <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">  
+            
+            {/* Modal Header - Fixed di atas */}
+            <div className="sticky top-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-b border-white/10 px-8 py-6 rounded-t-2xl backdrop-blur-xl z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-white">
+                    {modalMode === 'create' ? 'Tambah Role Baru' : 'Edit Role'}
+                  </h3>
+                  <p className="text-purple-300 text-sm mt-1">
+                    {modalMode === 'create' 
+                      ? 'Isi formulir di bawah untuk menambah role baru' 
+                      : 'Perbarui informasi role Anda'}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                  title="Tutup"
                 >
-                  Batal
+                  <svg className="w-6 h-6 text-purple-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+               </div>
+            </div>
+            
+            {/* Modal Body - Scrollable */}
+            <div className="overflow-y-auto flex-1 px-8 py-6 custom-scrollbar">
+              {error && (
+                <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg animate-shake">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-red-200 text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6" id="role-form">
+                {/* Nama Role */}
+                <div className="space-y-2">
+                  <label className="block text-purple-200 text-sm font-semibold mb-2">
+                    Nama Role <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.nama_role}
+                      onChange={(e) => setFormData({ ...formData, nama_role: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      placeholder="Contoh: Manager, Supervisor, dll"
+                      required
+                      maxLength={50}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-400/70 ml-1">
+                    Maksimal 50 karakter ({formData.nama_role.length}/50)
+                  </p>
+                </div>
+
+                {/* Deskripsi */}
+                <div className="space-y-2">
+                  <label className="block text-purple-200 text-sm font-semibold mb-2">
+                    Deskripsi Role
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={formData.deskripsi}
+                      onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
+                      className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                      placeholder="Deskripsi role Anda..."
+                      rows={4}
+                      maxLength={200}
+                    />
+                  </div>
+                  <p className="text-xs text-purple-400/70 ml-1">
+                    Maksimal 200 karakter ({formData.deskripsi.length}/200)
+                  </p>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer - Fixed di bawah */}
+            <div className="sticky bottom-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-t border-white/10 px-8 py-6 rounded-b-2xl backdrop-blur-xl">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Batal</span>
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg transition-all"
+                  form="role-form"
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2"
                 >
-                  {modalMode === 'create' ? 'Tambah' : 'Update'}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {modalMode === 'create' ? 'Tambah Role' : 'Update Role'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
+      
+      {/* Add animation keyframes */}
+      <style jsx>{`
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #9333ea, #3b82f6);
+          border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #a855f7, #60a5fa);
+        }
+
+        /* Animations */
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+          
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
+        }
+        .hover\:scale-102:hover {
+          transform: scale(1.02);
+        }
+      `}</style>
     </div>
   );
 }
