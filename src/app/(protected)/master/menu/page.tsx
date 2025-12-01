@@ -646,11 +646,14 @@ export default function MasterMenuPage() {
                           ...formData, 
                           parent_id: e.target.value ? Number(e.target.value) : null 
                         })}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                        className="w-full pl-12 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                        style={{
+                          colorScheme: 'dark'
+                        }}
                       >
-                        <option value="">-- Tidak Ada Parent (Main Menu) --</option>
+                        <option value="" className="bg-slate-800 text-white py-2">-- Tidak Ada Parent (Main Menu) --</option>
                         {parentMenus.map((menu) => (
-                          <option key={menu.id} value={menu.id}>
+                          <option key={menu.id} value={menu.id} className="bg-slate-800 text-white py-2">
                             {menu.nama_menu}
                           </option>
                         ))}
@@ -768,6 +771,20 @@ export default function MasterMenuPage() {
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(to bottom, #a855f7, #60a5fa);
+        }
+
+        /* Select Dropdown Options - Fix white background */
+        select option {
+          background-color: #1e293b !important;
+          color: white !important;
+          padding: 8px 12px !important;
+        }
+        
+        select option:hover,
+        select option:focus,
+        select option:checked {
+          background-color: #334155 !important;
+          background: linear-gradient(to right, #7c3aed, #2563eb) !important;
         }
 
         /* Animations */
