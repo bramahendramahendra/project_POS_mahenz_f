@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { FormInput, FormTextarea } from '@/components/FormInput';
 
 interface Shop {
   id: number;
@@ -25,6 +26,14 @@ interface ShopsResponse {
   meta: Meta;
 }
 
+interface ValidationErrors {
+  nama_toko: string;
+  deskripsi: string;
+  nomor_telepon: string;
+  nomor_whatsapp: string;
+  alamat: string;
+}
+
 export default function MasterShopPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [meta, setMeta] = useState<Meta>({
@@ -46,6 +55,13 @@ export default function MasterShopPage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    nama_toko: '',
+    deskripsi: '',
+    nomor_telepon: '',
+    nomor_whatsapp: '',
+    alamat: '',
+  });
   
   // State untuk pagination dan search
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,8 +74,8 @@ export default function MasterShopPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
-      setCurrentPage(1); // Reset ke halaman pertama saat search berubah
-    }, 500); // Delay 500ms setelah user berhenti mengetik
+      setCurrentPage(1);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchInput]);
@@ -89,6 +105,59 @@ export default function MasterShopPage() {
     }
   };
 
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {
+      nama_toko: '',
+      deskripsi: '',
+      nomor_telepon: '',
+      nomor_whatsapp: '',
+      alamat: '',
+    };
+    let isValid = true;
+
+    // Validasi nama toko
+    if (!formData.nama_toko.trim()) {
+      errors.nama_toko = 'Nama toko tidak boleh kosong';
+      isValid = false;
+    } else if (formData.nama_toko.length > 50) {
+      errors.nama_toko = 'Nama toko maksimal 50 karakter';
+      isValid = false;
+    }
+
+    // Validasi deskripsi (opsional, tapi jika diisi harus valid)
+    if (formData.deskripsi && formData.deskripsi.length > 200) {
+      errors.deskripsi = 'Deskripsi maksimal 200 karakter';
+      isValid = false;
+    }
+
+    // Validasi nomor telepon
+    if (!formData.nomor_telepon.trim()) {
+      errors.nomor_telepon = 'Nomor telepon tidak boleh kosong';
+      isValid = false;
+    } else if (formData.nomor_telepon.length > 20) {
+      errors.nomor_telepon = 'Nomor telepon maksimal 20 karakter';
+      isValid = false;
+    }
+
+    // Validasi nomor whatsapp
+    if (!formData.nomor_whatsapp.trim()) {
+      errors.nomor_whatsapp = 'Nomor whatsapp tidak boleh kosong';
+      isValid = false;
+    } else if (formData.nomor_whatsapp.length > 20) {
+      errors.nomor_whatsapp = 'Nomor whatsapp maksimal 20 karakter';
+      isValid = false;
+    }
+
+    // Validasi alamat (opsional, tapi jika diisi harus valid)
+    if (formData.alamat && formData.alamat.length > 200) {
+      errors.alamat = 'Alamat maksimal 200 karakter';
+      isValid = false;
+    }
+
+    setValidationErrors(errors);
+    return isValid;
+  };
+
   const handleClearSearch = () => {
     setSearchInput('');
     setSearchQuery('');
@@ -102,8 +171,8 @@ export default function MasterShopPage() {
 
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
-    setCurrentPage(1); // Reset ke halaman pertama
-    setShowPerPageDropdown(false); // Close dropdown
+    setCurrentPage(1);
+    setShowPerPageDropdown(false);
   };
 
   const handleOpenModal = (mode: 'create' | 'edit', shop?: Shop) => {
@@ -118,6 +187,13 @@ export default function MasterShopPage() {
     });
     setShowModal(true);
     setError('');
+    setValidationErrors({
+      nama_toko: '',
+      deskripsi: '',
+      nomor_telepon: '',
+      nomor_whatsapp: '',
+      alamat: '',
+    });
   };
 
   const handleCloseModal = () => {
@@ -131,12 +207,25 @@ export default function MasterShopPage() {
       alamat: '', 
     });
     setError('');
+    setValidationErrors({
+      nama_toko: '', 
+      deskripsi: '', 
+      nomor_telepon: '', 
+      nomor_whatsapp: '', 
+      alamat: '',
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validasi form
+    if (!validateForm()) {
+      setError('Mohon perbaiki kesalahan pada form');
+      return;
+    }
 
     try {
       if (modalMode === 'create') {
@@ -152,7 +241,13 @@ export default function MasterShopPage() {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Terjadi kesalahan');
+      const errorMessage = err.response?.data?.message || 'Terjadi kesalahan';
+      setError(errorMessage);
+      
+      // Handle validation errors dari backend
+      if (err.response?.data?.errors) {
+        setValidationErrors(err.response.data.errors);
+      }
     }
   };
 
@@ -172,10 +267,9 @@ export default function MasterShopPage() {
     }
   };
 
-  // Generate array untuk pagination buttons
   const getPaginationRange = () => {
     const range = [];
-    const delta = 2; // Jumlah halaman yang ditampilkan di kiri dan kanan halaman aktif
+    const delta = 2;
     
     for (let i = 1; i <= meta.totalPages; i++) {
       if (
@@ -205,14 +299,24 @@ export default function MasterShopPage() {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm">
-          <p className="text-green-200 text-sm">{success}</p>
+        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
+           <div className="flex items-center space-x-3">
+            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-green-200 text-sm">{success}</p>
+          </div>
         </div>
       )}
       
       {error && !showModal && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm">
-          <p className="text-red-200 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
+          <div className="flex items-center space-x-3">
+            <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-red-200 text-sm">{error}</p>
+          </div>
         </div>
       )}
 
@@ -241,7 +345,6 @@ export default function MasterShopPage() {
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          {/* Search Input - Auto Search */}
           <div className="flex-1">
             <div className="relative">
               <input
@@ -299,13 +402,11 @@ export default function MasterShopPage() {
             {/* Custom Dropdown Menu */}
             {showPerPageDropdown && (
               <>
-                {/* Backdrop */}
                 <div 
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowPerPageDropdown(false)}
                 />
                 
-                {/* Dropdown Options */}
                 <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
                   <div className="p-2 space-y-1">
                     {[5, 10, 20, 50].map((option) => (
@@ -335,7 +436,6 @@ export default function MasterShopPage() {
                     ))}
                   </div>
                   
-                  {/* Decorative gradient line */}
                   <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
                 </div>
               </>
@@ -435,14 +535,11 @@ export default function MasterShopPage() {
 
             {/* Pagination */}
             <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
-              {/* Info */}
               <div className="text-purple-300 text-sm">
                 Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
               </div>
 
-              {/* Pagination Buttons */}
               <div className="flex items-center space-x-2">
-                {/* Previous Button */}
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
@@ -453,7 +550,6 @@ export default function MasterShopPage() {
                   </svg>
                 </button>
 
-                {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
                   {getPaginationRange().map((page, index) => (
                     page === '...' ? (
@@ -476,7 +572,6 @@ export default function MasterShopPage() {
                   ))}
                 </div>
 
-                {/* Next Button */}
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === meta.totalPages}
@@ -495,7 +590,6 @@ export default function MasterShopPage() {
       {/* Modal dengan Scroll */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          {/* Modal Container */}
           <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}
@@ -539,125 +633,102 @@ export default function MasterShopPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6" id="shop-form">
                 {/* Nama Toko */}
-                <div className="space-y-2">
-                  <label className="block text-purple-200 text-sm font-semibold mb-2">
-                    Nama Toko <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.nama_toko}
-                      onChange={(e) => setFormData({ ...formData, nama_toko: e.target.value })}
-                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      placeholder="Contoh: Toko Buku Cahaya"
-                      required
-                      maxLength={50}
-                    />
-                  </div>
-                  <p className="text-xs text-purple-400/70 ml-1">
-                    Maksimal 50 karakter ({formData.nama_toko.length}/50)
-                  </p>
-                </div>
+                <FormInput
+                  label="Nama Toko"
+                  value={formData.nama_toko}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nama_toko: e.target.value });
+                    if (validationErrors.nama_toko) {
+                      setValidationErrors({ ...validationErrors, nama_toko: '' });
+                    }
+                  }}
+                  placeholder="Contoh: Toko Buku Cahaya"
+                  required
+                  maxLength={50}
+                  error={validationErrors.nama_toko}
+                  icon={
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  }
+                />
 
                 {/* Deskripsi */}
-                <div className="space-y-2">
-                  <label className="block text-purple-200 text-sm font-semibold mb-2">
-                    Deskripsi Toko
-                  </label>
-                  <div className="relative">
-                    <textarea
-                      value={formData.deskripsi}
-                      onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
-                      className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                      placeholder="Jelaskan tentang toko Anda..."
-                      rows={4}
-                      maxLength={200}
-                    />
-                  </div>
-                  <p className="text-xs text-purple-400/70 ml-1">
-                    Maksimal 200 karakter ({formData.deskripsi.length}/200)
-                  </p>
-                </div>
+                <FormTextarea
+                  label="Deskripsi Toko"
+                  value={formData.deskripsi}
+                  onChange={(e) => {
+                    setFormData({ ...formData, deskripsi: e.target.value });
+                    if (validationErrors.deskripsi) {
+                      setValidationErrors({ ...validationErrors, deskripsi: '' });
+                    }
+                  }}
+                  placeholder="Jelaskan tentang toko Anda..."
+                  rows={4}
+                  maxLength={200}
+                  error={validationErrors.deskripsi}
+                />
 
                 {/* Nomor Telepon & WhatsApp */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Nomor Telepon */}
-                  <div className="space-y-2">
-                    <label className="block text-purple-200 text-sm font-semibold mb-2">
-                      Nomor Telepon <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="tel"
-                        value={formData.nomor_telepon}
-                        onChange={(e) => setFormData({ ...formData, nomor_telepon: e.target.value })}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="08123456789"
-                        required
-                        maxLength={20}
-                      />
-                    </div>
-                  </div>
+                  <FormInput
+                    label="Nomor Telepon"
+                    value={formData.nomor_telepon}
+                    onChange={(e) => {
+                      setFormData({ ...formData, nomor_telepon: e.target.value });
+                      if (validationErrors.nomor_telepon) {
+                        setValidationErrors({ ...validationErrors, nomor_telepon: '' });
+                      }
+                    }}
+                    placeholder="Contoh: 08123456789"
+                    required
+                    maxLength={20}
+                    error={validationErrors.nomor_telepon}
+                    icon={
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    }
+                  />
 
                   {/* Nomor WhatsApp */}
-                  <div className="space-y-2">
-                    <label className="block text-purple-200 text-sm font-semibold mb-2">
-                      Nomor WhatsApp <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="tel"
-                        value={formData.nomor_whatsapp}
-                        onChange={(e) => setFormData({ ...formData, nomor_whatsapp: e.target.value })}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="08123456789"
-                        required
-                        maxLength={20}
-                      />
-                    </div>
-                  </div>
+                  <FormInput
+                    label="Nomor WhatsApp"
+                    value={formData.nomor_whatsapp}
+                    onChange={(e) => {
+                      setFormData({ ...formData, nomor_whatsapp: e.target.value });
+                      if (validationErrors.nomor_whatsapp) {
+                        setValidationErrors({ ...validationErrors, nomor_whatsapp: '' });
+                      }
+                    }}
+                    placeholder="Contoh: 08123456789"
+                    required
+                    maxLength={20}
+                    error={validationErrors.nomor_whatsapp}
+                    icon={
+                      <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                      </svg>
+                    }
+                  />
                 </div>
 
                 {/* Alamat */}
-                <div className="space-y-2">
-                  <label className="block text-purple-200 text-sm font-semibold mb-2">
-                    Alamat Toko
-                  </label>
-                  <div className="relative">
-                    <div className="absolute top-4 left-4 pointer-events-none">
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <textarea
-                      value={formData.alamat}
-                      onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
-                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                      placeholder="Jl. Contoh No. 123, Kota..."
-                      rows={3}
-                      maxLength={200}
-                    />
-                  </div>
-                  <p className="text-xs text-purple-400/70 ml-1">
-                    Maksimal 200 karakter ({formData.alamat.length}/200)
-                  </p>
-                </div>
+                <FormTextarea
+                  label="Alamat Toko"
+                  value={formData.alamat}
+                  onChange={(e) => {
+                    setFormData({ ...formData, alamat: e.target.value });
+                    if (validationErrors.alamat) {
+                      setValidationErrors({ ...validationErrors, alamat: '' });
+                    }
+                  }}
+                  placeholder="Contoh : Jl. Contoh No. 123, Kota..."
+                  rows={3}
+                  maxLength={200}
+                  error={validationErrors.alamat}
+                />
               </form>
             </div>
 
@@ -690,9 +761,8 @@ export default function MasterShopPage() {
         </div>
       )}
 
-      {/* Custom Scrollbar Styles */}
-      <style jsx global>{`
-        /* Custom Scrollbar */
+      {/* Styles */}
+      <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
@@ -711,7 +781,6 @@ export default function MasterShopPage() {
           background: linear-gradient(to bottom, #a855f7, #60a5fa);
         }
 
-        /* Animations */
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
@@ -732,12 +801,27 @@ export default function MasterShopPage() {
             transform: translateY(0);
           }
         }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
         
         .animate-slideDown {
           animation: slideDown 0.2s ease-out;
         }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
         
-        .hover\:scale-102:hover {
+        .hover\\:scale-102:hover {
           transform: scale(1.02);
         }
       `}</style>
