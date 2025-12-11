@@ -1,28 +1,26 @@
 import React from 'react';
 
-interface FormInputProps {
+interface FormTextareaProps {
   label: string;
-  type?: 'text' | 'tel' | 'email';
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  rows?: number;
   error?: string;
-  icon?: React.ReactNode;
   helperText?: string;
 }
 
-export const FormInput: React.FC<FormInputProps> = ({
+export const FormTextarea: React.FC<FormTextareaProps> = ({
   label,
-  type = 'text',
   value,
   onChange,
   placeholder,
   required = false,
   maxLength,
+  rows = 4,
   error,
-  icon,
   helperText,
 }) => {
   const hasError = !!error;
@@ -33,28 +31,23 @@ export const FormInput: React.FC<FormInputProps> = ({
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       <div className="relative">
-        {icon && (
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            {icon}
-          </div>
-        )}
-        <input
-          type={type}
+        <textarea
           value={value}
           onChange={onChange}
-          className={`w-full ${icon ? 'pl-12' : 'pl-4'} pr-4 py-3.5 bg-white/5 border rounded-xl text-white placeholder-purple-300/50 focus:outline-none transition-all ${
+          className={`w-full px-4 py-3.5 bg-white/5 border rounded-xl text-white placeholder-purple-300/50 focus:outline-none transition-all resize-none ${
             hasError
               ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-transparent'
               : 'border-white/10 focus:ring-2 focus:ring-purple-500 focus:border-transparent'
           }`}
           placeholder={placeholder}
+          rows={rows}
           maxLength={maxLength}
           aria-required={required}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${label}-error` : undefined}
         />
         {hasError && (
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+          <div className="absolute top-4 right-4 pointer-events-none">
             <svg
               className="w-5 h-5 text-red-400"
               fill="none"
