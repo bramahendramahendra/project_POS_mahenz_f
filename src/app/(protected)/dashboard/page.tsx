@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { User } from '@/types/user';
+import { User } from '@/types/models/user';
 
 export default function DashboardPage() {
   const [users, setUsers] = useState<User[]>([]);

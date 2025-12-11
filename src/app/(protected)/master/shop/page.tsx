@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { FormInput, FormTextarea } from '@/components/FormInput';
+import { FormInput, FormTextarea } from '@/components/forms/FormInput';
 
 interface Shop {
   id: number;

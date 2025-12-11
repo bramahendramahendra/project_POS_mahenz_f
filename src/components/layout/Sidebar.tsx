@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import api from '@/lib/api';
-import { Menu } from '@/types/menu';
+import { Menu } from '@/types/models/menu';
 
 export default function Sidebar() {
   const pathname = usePathname();

@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { FormInput, FormTextarea } from '@/components/FormInput';
+import { FormInput } from '@/components/forms/FormInput';
+import { FormTextarea } from '@/components/forms/FormTextarea';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { AlertMessage } from '@/components/ui/AlertMessage';
+import { SearchBar } from '@/components/search/SearchBar';
+import { PerPageSelector } from '@/components/search/PerPageSelector';
+import { Pagination } from '@/components/ui/Pagination';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-interface Role {
-  id: number;
-  nama_role: string;
-  deskripsi: string;
-  created_at: string;
-}
+import { Role } from '@/types/models';
+import { 
+  PaginatedResponse, 
+  PaginationMeta,
+  RolesResponse 
+} from '@/types/api';
 
 interface Meta {
   page: number;
@@ -51,14 +59,12 @@ export default function MasterRolePage() {
     deskripsi: '',
   });
   
-  // State untuk pagination dan search
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showPerPageDropdown, setShowPerPageDropdown] = useState(false);
 
-  // Debounce untuk auto-search
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
@@ -100,7 +106,6 @@ export default function MasterRolePage() {
     };
     let isValid = true;
 
-    // Validasi nama role
     if (!formData.nama_role.trim()) {
       errors.nama_role = 'Nama role tidak boleh kosong';
       isValid = false;
@@ -109,7 +114,6 @@ export default function MasterRolePage() {
       isValid = false;
     }
 
-    // Validasi deskripsi (opsional, tapi jika diisi harus valid)
     if (formData.deskripsi && formData.deskripsi.length > 200) {
       errors.deskripsi = 'Deskripsi maksimal 200 karakter';
       isValid = false;
@@ -133,7 +137,6 @@ export default function MasterRolePage() {
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage);
     setCurrentPage(1);
-    setShowPerPageDropdown(false);
   };
 
   const handleOpenModal = (mode: 'create' | 'edit', role?: Role) => {
@@ -167,7 +170,6 @@ export default function MasterRolePage() {
     setError('');
     setSuccess('');
 
-    // Validasi form
     if (!validateForm()) {
       setError('Mohon perbaiki kesalahan pada form');
       return;
@@ -190,7 +192,6 @@ export default function MasterRolePage() {
       const errorMessage = err.response?.data?.message || 'Terjadi kesalahan';
       setError(errorMessage);
       
-      // Handle validation errors dari backend
       if (err.response?.data?.errors) {
         setValidationErrors(err.response.data.errors);
       }
@@ -213,57 +214,30 @@ export default function MasterRolePage() {
     }
   };
 
-  const getPaginationRange = () => {
-    const range = [];
-    const delta = 2;
-    
-    for (let i = 1; i <= meta.totalPages; i++) {
-      if (
-        i === 1 ||
-        i === meta.totalPages ||
-        (i >= currentPage - delta && i <= currentPage + delta)
-      ) {
-        range.push(i);
-      } else if (
-        i === currentPage - delta - 1 ||
-        i === currentPage + delta + 1
-      ) {
-        range.push('...');
-      }
-    }
-    
-    return range;
-  };
-
   return (
     <div className="p-8">
       {/* Page Header */}
-      <div className="mb-8 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
-        <h2 className="text-3xl font-bold text-white mb-2">Master Role 👥</h2>
-        <p className="text-purple-200">Kelola role dan permission pengguna</p>
-      </div>
+      <PageHeader 
+        title="Master Role"
+        subtitle="Kelola role dan permission pengguna"
+        icon="👥"
+      />
 
-      {/* Success/Error Messages */}
+      {/* Alert Messages */}
       {success && (
-        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
-          <div className="flex items-center space-x-3">
-            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-green-200 text-sm">{success}</p>
-          </div>
-        </div>
+        <AlertMessage 
+          type="success" 
+          message={success}
+          onClose={() => setSuccess('')}
+        />
       )}
       
       {error && !showModal && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
-          <div className="flex items-center space-x-3">
-            <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-red-200 text-sm">{error}</p>
-          </div>
-        </div>
+        <AlertMessage 
+          type="error" 
+          message={error}
+          onClose={() => setError('')}
+        />
       )}
 
       {/* Content Card */}
@@ -291,130 +265,31 @@ export default function MasterRolePage() {
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nama role atau deskripsi..."
-                className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-              />
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-            {searchQuery && (
-              <p className="mt-2 text-xs text-purple-300">
-                Hasil pencarian untuk: <span className="font-semibold">"{searchQuery}"</span>
-              </p>
-            )}
-          </div>
+          <SearchBar
+            value={searchInput}
+            onChange={setSearchInput}
+            onClear={handleClearSearch}
+            placeholder="Cari nama role atau deskripsi..."
+            resultText={searchQuery ? `Hasil pencarian untuk: "${searchQuery}"` : undefined}
+          />
 
-          <div className="relative">
-            <div
-              onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
-              className="flex items-center space-x-3 bg-gradient-to-br from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 border border-white/20 rounded-xl px-5 py-2 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer backdrop-blur-sm"
-            >
-              <span className="text-purple-300 text-sm">Tampilkan:</span>
-              <span className="text-white font-bold text-lg px-3 py-1 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30">
-                {perPage}
-              </span>
-              <span className="text-purple-300 text-sm">data</span>
-              <svg 
-                className={`w-5 h-5 text-purple-400 transition-transform duration-300 ${showPerPageDropdown ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-
-            {showPerPageDropdown && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setShowPerPageDropdown(false)}
-                />
-                
-                <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
-                  <div className="p-2 space-y-1">
-                    {[5, 10, 20, 50].map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handlePerPageChange(option)}
-                        className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
-                          perPage === option
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
-                            : 'text-purple-200 hover:bg-white/10 hover:text-white hover:scale-102'
-                        }`}
-                      >
-                        <span className="flex items-center space-x-3">
-                          <span className={`font-semibold text-lg ${
-                            perPage === option ? 'text-white' : 'text-purple-400'
-                          }`}>
-                            {option}
-                          </span>
-                          <span className="text-sm opacity-80">data per halaman</span>
-                        </span>
-                        {perPage === option && (
-                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
-                </div>
-              </>
-            )}
-          </div>
+          <PerPageSelector
+            value={perPage}
+            onChange={handlePerPageChange}
+            isOpen={showPerPageDropdown}
+            onToggle={() => setShowPerPageDropdown(!showPerPageDropdown)}
+          />
         </div>
 
         {/* Table */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-3">
-              <svg className="animate-spin h-8 w-8 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="text-purple-300 font-medium">Loading...</span>
-            </div>
-          </div>
+          <LoadingSpinner />
         ) : roles.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-purple-300 font-medium">
-              {searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data role'}
-            </p>
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-              >
-                Clear Search
-              </button>
-            )}
-          </div>
+          <EmptyState
+            message={searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data role'}
+            searchQuery={searchQuery}
+            onClearSearch={handleClearSearch}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -478,63 +353,21 @@ export default function MasterRolePage() {
             </div>
 
             {/* Pagination */}
-            <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="text-purple-300 text-sm">
-                Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                <div className="flex items-center space-x-1">
-                  {getPaginationRange().map((page, index) => (
-                    page === '...' ? (
-                      <span key={`dots-${index}`} className="px-3 py-2 text-purple-300">
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page as number)}
-                        className={`px-4 py-2 rounded-lg transition-all ${
-                          currentPage === page
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold'
-                            : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    )
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === meta.totalPages}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={meta.totalPages}
+              totalRecords={meta.totalRecords}
+              perPage={perPage}
+              onPageChange={handlePageChange}
+            />
           </>
         )}
       </div>
 
-      {/* Modal dengan Scroll dan Validasi */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">  
+          <div className="bg-slate-900 rounded-2xl border border-white/10 max-w-2xl w-full shadow-2xl my-8 flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}
             <div className="sticky top-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-b border-white/10 px-8 py-6 rounded-t-2xl backdrop-blur-xl z-10">
@@ -561,22 +394,14 @@ export default function MasterRolePage() {
                 </button>
               </div>
             </div>
-            
-            {/* Modal Body - Scrollable */}
+
+            {/* Modal Body */}
             <div className="overflow-y-auto flex-1 px-8 py-6 custom-scrollbar">
               {error && (
-                <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg animate-shake">
-                  <div className="flex items-start space-x-3">
-                    <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-red-200 text-sm">{error}</p>
-                  </div>
-                </div>
+                <AlertMessage type="error" message={error} />
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6" id="role-form">
-                {/* Nama Role dengan FormInput */}
                 <FormInput
                   label="Nama Role"
                   value={formData.nama_role}
@@ -597,7 +422,6 @@ export default function MasterRolePage() {
                   }
                 />
 
-                {/* Deskripsi dengan FormTextarea */}
                 <FormTextarea
                   label="Deskripsi Role"
                   value={formData.deskripsi}
@@ -615,7 +439,7 @@ export default function MasterRolePage() {
               </form>
             </div>
 
-            {/* Modal Footer - Fixed di bawah */}
+            {/* Modal Footer */}
             <div className="sticky bottom-0 bg-gradient-to-r from-slate-900 to-purple-900/50 border-t border-white/10 px-8 py-6 rounded-b-2xl backdrop-blur-xl">
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
@@ -669,7 +493,7 @@ export default function MasterRolePage() {
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
         }
-
+        
         .animate-shake {
           animation: shake 0.3s ease-in-out;
         }

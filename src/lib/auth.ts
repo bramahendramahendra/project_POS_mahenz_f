@@ -1,5 +1,5 @@
 import Cookies from 'js-cookie';
-import { User } from '@/types/user';
+import { User } from '@/types/models/user';
 
 // Set auth token
 export const setAuthToken = (token: string) => {

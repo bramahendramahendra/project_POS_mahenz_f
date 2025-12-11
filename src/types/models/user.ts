@@ -1,8 +1,4 @@
-export interface Role {
-  id: number;
-  nama_role: string;
-  deskripsi: string;
-}
+import { Role } from './role';
 
 export interface User {
   id: number;
@@ -13,6 +9,7 @@ export interface User {
   tanggal_awal_kerja?: string;
   status_karyawan?: string;
   role: Role;
+  role_id: number;
 }
 
 export interface LoginResponse {

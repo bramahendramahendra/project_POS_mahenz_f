@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthUser, clearAuth } from '@/lib/auth';
-import { User } from '@/types/user';
+import { User } from '@/types/models/user';
 
 export default function Header() {
   const router = useRouter();

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { FormInput, FormTextarea } from '@/components/FormInput';
+import { FormInput } from '@/components/forms/FormInput';
+import { FormTextarea } from '@/components/forms/FormTextarea';
+import { FormSelect } from '@/components/forms/FormSelect';
 
 interface Menu {
   id: number;
@@ -36,6 +38,7 @@ interface ValidationErrors {
   icon: string;
   path: string;
   urutan: string;
+  parent_id: string;
 }
 
 export default function MasterMenuPage() {
@@ -66,6 +69,7 @@ export default function MasterMenuPage() {
     icon: '',
     path: '',
     urutan: '',
+    parent_id: '',
   });
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,6 +128,7 @@ export default function MasterMenuPage() {
       icon: '',
       path: '',
       urutan: '',
+      parent_id: '',
     };
     let isValid = true;
 
@@ -193,6 +198,7 @@ export default function MasterMenuPage() {
       icon: '',
       path: '',
       urutan: '',
+      parent_id: '',
     });
   };
 
@@ -213,6 +219,7 @@ export default function MasterMenuPage() {
       icon: '',
       path: '',
       urutan: '',
+      parent_id: '',
     });
   };
 
@@ -290,6 +297,12 @@ export default function MasterMenuPage() {
     
     return range;
   };
+
+  // Prepare parent menu options for FormSelect
+  const parentMenuOptions = parentMenus.map(menu => ({
+    value: menu.id,
+    label: menu.nama_menu
+  }));
 
   return (
     <div className="p-8">
@@ -717,42 +730,28 @@ export default function MasterMenuPage() {
 
                 {/* Parent Menu & Urutan - Grid 2 kolom */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Parent Menu */}
-                  <div className="space-y-2">
-                    <label className="block text-purple-200 text-sm font-semibold mb-2">
-                      Parent Menu
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                      </div>
-                      <select
-                        value={formData.parent_id || ''}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          parent_id: e.target.value ? Number(e.target.value) : null 
-                        })}
-                        className="w-full pl-12 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none cursor-pointer"
-                        style={{
-                          colorScheme: 'dark'
-                        }}
-                      >
-                        <option value="" className="bg-slate-800 text-white py-2">-- Tidak Ada Parent (Main Menu) --</option>
-                        {parentMenus.map((menu) => (
-                          <option key={menu.id} value={menu.id} className="bg-slate-800 text-white py-2">
-                            {menu.nama_menu}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Parent Menu dengan FormSelect */}
+                  <FormSelect
+                    label="Parent Menu"
+                    value={formData.parent_id || ''}
+                    onChange={(e) => {
+                      setFormData({ 
+                        ...formData, 
+                        parent_id: e.target.value ? Number(e.target.value) : null 
+                      });
+                      if (validationErrors.parent_id) {
+                        setValidationErrors({ ...validationErrors, parent_id: '' });
+                      }
+                    }}
+                    options={parentMenuOptions}
+                    placeholder="-- Tidak Ada Parent (Main Menu) --"
+                    error={validationErrors.parent_id}
+                    icon={
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    }
+                  />
 
                   {/* Urutan */}
                   <FormInput
@@ -860,42 +859,6 @@ export default function MasterMenuPage() {
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(to bottom, #a855f7, #60a5fa);
-        }
-
-        /* Select Dropdown Options - Fix all backgrounds */
-        select {
-          background-color: rgba(255, 255, 255, 0.05) !important;
-        }
-
-        select option {
-          background-color: #1e293b !important;
-          color: white !important;
-          padding: 8px 12px !important;
-        }
-        
-        /* Fix untuk selected option */
-        select option:checked {
-          background: linear-gradient(90deg, #7c3aed 0%, #2563eb 100%) !important;
-          color: white !important;
-          font-weight: 600 !important;
-        }
-
-        /* Fix untuk hover state */
-        select option:hover {
-          background-color: #334155 !important;
-          color: white !important;
-        }
-
-        /* Fix untuk focus state */
-        select option:focus {
-          background-color: #475569 !important;
-          color: white !important;
-        }
-
-        /* Alternative styling untuk browser yang tidak support */
-        select:focus option:checked {
-          background: #7c3aed !important;
-          color: white !important;
         }
 
         /* Animations */

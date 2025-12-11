@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { setAuthToken, setAuthUser, setAllowedPaths } from '@/lib/auth';
-import { LoginResponse } from '@/types/user';
+import { LoginResponse } from '@/types/models/user';
 
 function LoginForm() {
   const router = useRouter();
