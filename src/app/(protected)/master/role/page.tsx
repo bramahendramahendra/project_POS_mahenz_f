@@ -2,6 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+
+// Import types
+import type { Role, CreateRoleDto, UpdateRoleDto } from '@/types/models';
+import type { 
+  RolesResponse, 
+  PaginationMeta, 
+  PaginationQuery 
+} from '@/types/api';
+import type { RoleValidationErrors } from '@/types/forms';
+
+// Import components
 import { FormInput } from '@/components/forms/FormInput';
 import { FormTextarea } from '@/components/forms/FormTextarea';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -12,59 +23,38 @@ import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-import { Role } from '@/types/models';
-import { 
-  PaginatedResponse, 
-  PaginationMeta,
-  RolesResponse 
-} from '@/types/api';
-
-interface Meta {
-  page: number;
-  perPage: number;
-  totalPages: number;
-  totalRecords: number;
-}
-
-interface RolesResponse {
-  data: Role[];
-  meta: Meta;
-}
-
-interface ValidationErrors {
-  nama_role: string;
-  deskripsi: string;
-}
-
 export default function MasterRolePage() {
+  // State
   const [roles, setRoles] = useState<Role[]>([]);
-  const [meta, setMeta] = useState<Meta>({
+  const [meta, setMeta] = useState<PaginationMeta>({
     page: 1,
     perPage: 10,
     totalPages: 1,
     totalRecords: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showModal, setShowModal] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateRoleDto>({
     nama_role: '',
     deskripsi: '',
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [validationErrors, setValidationErrors] = useState<RoleValidationErrors>({
     nama_role: '',
     deskripsi: '',
   });
   
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [showPerPageDropdown, setShowPerPageDropdown] = useState(false);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [perPage, setPerPage] = useState<number>(10);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchInput, setSearchInput] = useState<string>('');
+  const [showPerPageDropdown, setShowPerPageDropdown] = useState<boolean>(false);
 
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
@@ -74,20 +64,23 @@ export default function MasterRolePage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Fetch data
   useEffect(() => {
     fetchRoles();
   }, [currentPage, perPage, searchQuery]);
 
-  const fetchRoles = async () => {
+  const fetchRoles = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await api.get<RolesResponse>('/roles', {
-        params: {
-          page: currentPage,
-          limit: perPage,
-          search: searchQuery,
-        },
-      });
+      
+      const params: PaginationQuery = {
+        page: currentPage,
+        limit: perPage,
+        search: searchQuery,
+      };
+      
+      const response = await api.get<RolesResponse>('/roles', { params });
+      
       setRoles(response.data.data);
       setMeta(response.data.meta);
     } catch (error) {
@@ -100,7 +93,7 @@ export default function MasterRolePage() {
   };
 
   const validateForm = (): boolean => {
-    const errors: ValidationErrors = {
+    const errors: RoleValidationErrors = {
       nama_role: '',
       deskripsi: '',
     };
@@ -123,23 +116,23 @@ export default function MasterRolePage() {
     return isValid;
   };
 
-  const handleClearSearch = () => {
+  const handleClearSearch = (): void => {
     setSearchInput('');
     setSearchQuery('');
     setCurrentPage(1);
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = (newPage: number): void => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePerPageChange = (newPerPage: number) => {
+  const handlePerPageChange = (newPerPage: number): void => {
     setPerPage(newPerPage);
     setCurrentPage(1);
   };
 
-  const handleOpenModal = (mode: 'create' | 'edit', role?: Role) => {
+  const handleOpenModal = (mode: 'create' | 'edit', role?: Role): void => {
     setModalMode(mode);
     setSelectedRole(role || null);
     setFormData({
@@ -154,10 +147,13 @@ export default function MasterRolePage() {
     });
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (): void => {
     setShowModal(false);
     setSelectedRole(null);
-    setFormData({ nama_role: '', deskripsi: '' });
+    setFormData({ 
+      nama_role: '', 
+      deskripsi: '' 
+    });
     setError('');
     setValidationErrors({
       nama_role: '',
@@ -165,7 +161,7 @@ export default function MasterRolePage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -177,10 +173,10 @@ export default function MasterRolePage() {
 
     try {
       if (modalMode === 'create') {
-        await api.post('/roles', formData);
+        await api.post<Role>('/roles', formData as CreateRoleDto);
         setSuccess('Role berhasil ditambahkan');
       } else if (selectedRole) {
-        await api.patch(`/roles/${selectedRole.id}`, formData);
+        await api.patch<Role>(`/roles/${selectedRole.id}`, formData as UpdateRoleDto);
         setSuccess('Role berhasil diupdate');
       }
       
@@ -198,7 +194,7 @@ export default function MasterRolePage() {
     }
   };
 
-  const handleDelete = async (role: Role) => {
+  const handleDelete = async (role: Role): Promise<void> => {
     if (!confirm(`Apakah Anda yakin ingin menghapus role "${role.nama_role}"?`)) {
       return;
     }
@@ -212,6 +208,14 @@ export default function MasterRolePage() {
       setError(err.response?.data?.message || 'Gagal menghapus role');
       setTimeout(() => setError(''), 3000);
     }
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
@@ -242,6 +246,7 @@ export default function MasterRolePage() {
 
       {/* Content Card */}
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
+        {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">Daftar Role</h3>
@@ -304,7 +309,7 @@ export default function MasterRolePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {roles.map((role, index) => (
+                  {roles.map((role: Role, index: number) => (
                     <tr key={role.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-4 px-4 text-white">
                         {(currentPage - 1) * perPage + index + 1}
@@ -318,11 +323,7 @@ export default function MasterRolePage() {
                         {role.deskripsi || '-'}
                       </td>
                       <td className="py-4 px-4 text-purple-200">
-                        {new Date(role.created_at).toLocaleDateString('id-ID', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {formatDate(role.created_at)}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-2">
@@ -424,7 +425,7 @@ export default function MasterRolePage() {
 
                 <FormTextarea
                   label="Deskripsi Role"
-                  value={formData.deskripsi}
+                  value={formData.deskripsi || ''}
                   onChange={(e) => {
                     setFormData({ ...formData, deskripsi: e.target.value });
                     if (validationErrors.deskripsi) {

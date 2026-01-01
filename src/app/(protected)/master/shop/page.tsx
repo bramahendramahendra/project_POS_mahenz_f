@@ -2,60 +2,50 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { FormInput, FormTextarea } from '@/components/forms/FormInput';
 
-interface Shop {
-  id: number;
-  nama_toko: string;
-  deskripsi: string;
-  nomor_telepon: string;
-  nomor_whatsapp: string;
-  alamat: string;
-  created_at: string;
-}
+// Import types
+import type { Shop, CreateShopDto, UpdateShopDto } from '@/types/models';
+import type { 
+  ShopsResponse, 
+  PaginationMeta, 
+  PaginationQuery 
+} from '@/types/api';
+import type { ShopValidationErrors } from '@/types/forms';
 
-interface Meta {
-  page: number;
-  perPage: number;
-  totalPages: number;
-  totalRecords: number;
-}
-
-interface ShopsResponse {
-  data: Shop[];
-  meta: Meta;
-}
-
-interface ValidationErrors {
-  nama_toko: string;
-  deskripsi: string;
-  nomor_telepon: string;
-  nomor_whatsapp: string;
-  alamat: string;
-}
+// Import components
+import { FormInput } from '@/components/forms/FormInput';
+import { FormTextarea } from '@/components/forms/FormTextarea';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { AlertMessage } from '@/components/ui/AlertMessage';
+import { SearchBar } from '@/components/search/SearchBar';
+import { PerPageSelector } from '@/components/search/PerPageSelector';
+import { Pagination } from '@/components/ui/Pagination';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function MasterShopPage() {
+  // State
   const [shops, setShops] = useState<Shop[]>([]);
-  const [meta, setMeta] = useState<Meta>({
+  const [meta, setMeta] = useState<PaginationMeta>({
     page: 1,
     perPage: 10,
     totalPages: 1,
     totalRecords: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showModal, setShowModal] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateShopDto>({
     nama_toko: '',
     deskripsi: '',
     nomor_telepon: '',
     nomor_whatsapp: '',
     alamat: '',
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [validationErrors, setValidationErrors] = useState<ShopValidationErrors>({
     nama_toko: '',
     deskripsi: '',
     nomor_telepon: '',
@@ -84,16 +74,18 @@ export default function MasterShopPage() {
     fetchShops();
   }, [currentPage, perPage, searchQuery]);
 
-  const fetchShops = async () => {
+  const fetchShops = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await api.get<ShopsResponse>('/shops', {
-        params: {
-          page: currentPage,
-          limit: perPage,
-          search: searchQuery,
-        },
-      });
+
+      const params: PaginationQuery = {
+        page: currentPage,
+        limit: perPage,
+        search: searchQuery,
+      };
+
+      const response = await api.get<ShopsResponse>('/shops', {params });
+
       setShops(response.data.data);
       setMeta(response.data.meta);
     } catch (error) {
@@ -106,7 +98,7 @@ export default function MasterShopPage() {
   };
 
   const validateForm = (): boolean => {
-    const errors: ValidationErrors = {
+    const errors: ShopValidationErrors = {
       nama_toko: '',
       deskripsi: '',
       nomor_telepon: '',
@@ -115,7 +107,6 @@ export default function MasterShopPage() {
     };
     let isValid = true;
 
-    // Validasi nama toko
     if (!formData.nama_toko.trim()) {
       errors.nama_toko = 'Nama toko tidak boleh kosong';
       isValid = false;
@@ -216,7 +207,7 @@ export default function MasterShopPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -230,9 +221,10 @@ export default function MasterShopPage() {
     try {
       if (modalMode === 'create') {
         await api.post('/shops', formData);
+        await api.post<Shop>('/shops', formData as CreateShopDto);
         setSuccess('Toko berhasil ditambahkan');
       } else if (selectedShop) {
-        await api.patch(`/shops/${selectedShop.id}`, formData);
+        await api.patch<Shop>(`/shops/${selectedShop.id}`, formData as UpdateShopDto);
         setSuccess('Toko berhasil diupdate');
       }
       
@@ -243,8 +235,7 @@ export default function MasterShopPage() {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Terjadi kesalahan';
       setError(errorMessage);
-      
-      // Handle validation errors dari backend
+
       if (err.response?.data?.errors) {
         setValidationErrors(err.response.data.errors);
       }
@@ -267,61 +258,43 @@ export default function MasterShopPage() {
     }
   };
 
-  const getPaginationRange = () => {
-    const range = [];
-    const delta = 2;
-    
-    for (let i = 1; i <= meta.totalPages; i++) {
-      if (
-        i === 1 || // Halaman pertama
-        i === meta.totalPages || // Halaman terakhir
-        (i >= currentPage - delta && i <= currentPage + delta) // Halaman sekitar current page
-      ) {
-        range.push(i);
-      } else if (
-        i === currentPage - delta - 1 ||
-        i === currentPage + delta + 1
-      ) {
-        range.push('...');
-      }
-    }
-    
-    return range;
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
     <div className="p-8">
       {/* Page Header */}
-      <div className="mb-8 bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
-        <h2 className="text-3xl font-bold text-white mb-2">Master Toko 🏪</h2>
-        <p className="text-purple-200">Kelola toko dan permission pengguna</p>
-      </div>
+      <PageHeader 
+        title="Master Toko"
+        subtitle="Kelola toko dan permission pengguna"
+        icon="🏪"
+      />
 
-      {/* Success/Error Messages */}
+      {/* Alert Messages */}
       {success && (
-        <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
-           <div className="flex items-center space-x-3">
-            <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-green-200 text-sm">{success}</p>
-          </div>
-        </div>
+        <AlertMessage 
+          type="success" 
+          message={success}
+          onClose={() => setSuccess('')}
+        />
       )}
       
       {error && !showModal && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl backdrop-blur-sm animate-slideIn">
-          <div className="flex items-center space-x-3">
-            <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-red-200 text-sm">{error}</p>
-          </div>
-        </div>
+        <AlertMessage 
+          type="error" 
+          message={error}
+          onClose={() => setError('')}
+        />
       )}
 
       {/* Content Card */}
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
+        {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">Daftar Toko</h3>
@@ -345,132 +318,31 @@ export default function MasterShopPage() {
 
         {/* Search Bar & Per Page Selector */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Cari nama shop atau deskripsi..."
-                className="w-full pl-12 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-              />
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-purple-300 hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-            {searchQuery && (
-              <p className="mt-2 text-xs text-purple-300">
-                Hasil pencarian untuk: <span className="font-semibold">"{searchQuery}"</span>
-              </p>
-            )}
-          </div>
+          <SearchBar
+            value={searchInput}
+            onChange={setSearchInput}
+            onClear={handleClearSearch}
+            placeholder="Cari nama shop atau deskripsi..."
+            resultText={searchQuery ? `Hasil pencarian untuk: "${searchQuery}"` : undefined}
+          />
 
-          {/* Per Page Selector - Custom 3D Dropdown */}
-          <div className="relative">
-            <div
-              onClick={() => setShowPerPageDropdown(!showPerPageDropdown)}
-              className="flex items-center space-x-3 bg-gradient-to-br from-white/10 to-white/5 hover:from-white/15 hover:to-white/10 border border-white/20 rounded-xl px-5 py-2 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer backdrop-blur-sm"
-            >
-              <span className="text-purple-300 text-sm">Tampilkan:</span>
-              <span className="text-white font-bold text-lg px-3 py-1 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30">
-                {perPage}
-              </span>
-              <span className="text-purple-300 text-sm">data</span>
-              <svg 
-                className={`w-5 h-5 text-purple-400 transition-transform duration-300 ${showPerPageDropdown ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-
-            {/* Custom Dropdown Menu */}
-            {showPerPageDropdown && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setShowPerPageDropdown(false)}
-                />
-                
-                <div className="absolute right-0 mt-2 w-56 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden z-20 animate-slideDown">
-                  <div className="p-2 space-y-1">
-                    {[5, 10, 20, 50].map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handlePerPageChange(option)}
-                        className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
-                          perPage === option
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
-                            : 'text-purple-200 hover:bg-white/10 hover:text-white hover:scale-102'
-                        }`}
-                      >
-                        <span className="flex items-center space-x-3">
-                          <span className={`font-semibold text-lg ${
-                            perPage === option ? 'text-white' : 'text-purple-400'
-                          }`}>
-                            {option}
-                          </span>
-                          <span className="text-sm opacity-80">data per halaman</span>
-                        </span>
-                        {perPage === option && (
-                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
-                </div>
-              </>
-            )}
-          </div>
+          <PerPageSelector
+            value={perPage}
+            onChange={handlePerPageChange}
+            isOpen={showPerPageDropdown}
+            onToggle={() => setShowPerPageDropdown(!showPerPageDropdown)}
+          />
         </div>
 
         {/* Table */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-3">
-              <svg className="animate-spin h-8 w-8 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="text-purple-300 font-medium">Loading...</span>
-            </div>
-          </div>
+          <LoadingSpinner />
         ) : shops.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-purple-300 font-medium">
-              {searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data shop'}
-            </p>
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-              >
-                Clear Search
-              </button>
-            )}
-          </div>
+          <EmptyState
+            message={searchQuery ? 'Tidak ada data yang sesuai dengan pencarian' : 'Belum ada data toko'}
+            searchQuery={searchQuery}
+            onClearSearch={handleClearSearch}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -485,7 +357,7 @@ export default function MasterShopPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {shops.map((shop, index) => (
+                  {shops.map((shop: Shop, index: number) => (
                     <tr key={shop.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-4 px-4 text-white">
                         {(currentPage - 1) * perPage + index + 1}
@@ -499,11 +371,7 @@ export default function MasterShopPage() {
                         {shop.deskripsi || '-'}
                       </td>
                       <td className="py-4 px-4 text-purple-200">
-                        {new Date(shop.created_at).toLocaleDateString('id-ID', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {formatDate(shop.created_at)}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center space-x-2">
@@ -534,55 +402,13 @@ export default function MasterShopPage() {
             </div>
 
             {/* Pagination */}
-            <div className="mt-6 flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="text-purple-300 text-sm">
-                Menampilkan {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, meta.totalRecords)} dari {meta.totalRecords} data
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                <div className="flex items-center space-x-1">
-                  {getPaginationRange().map((page, index) => (
-                    page === '...' ? (
-                      <span key={`dots-${index}`} className="px-3 py-2 text-purple-300">
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page as number)}
-                        className={`px-4 py-2 rounded-lg transition-all ${
-                          currentPage === page
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold'
-                            : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    )
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === meta.totalPages}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={meta.totalPages}
+              totalRecords={meta.totalRecords}
+              perPage={perPage}
+              onPageChange={handlePageChange}
+            />
           </>
         )}
       </div>
